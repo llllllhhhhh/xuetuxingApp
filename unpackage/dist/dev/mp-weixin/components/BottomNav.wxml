@@ -1,0 +1,1 @@
+<view class="bottom-bar"><view wx:for="{{a}}" wx:for-item="i" wx:key="c" class="{{['bottom-item', i.d && 'on']}}" bindtap="{{i.e}}"><view class="bottom-icon">{{i.a}}</view>{{i.b}}</view></view>

@@ -1,0 +1,11 @@
+
+.article-detail-page.data-v-a5ebea5b{background:linear-gradient(180deg,#fff8ef,#f4f8f5)}
+.article-detail.data-v-a5ebea5b{padding:34rpx 30rpx;border-radius:30rpx}
+.article-meta.data-v-a5ebea5b{display:flex;gap:10rpx;flex-wrap:wrap;margin-bottom:18rpx}
+.article-title.data-v-a5ebea5b{font-size:42rpx;font-weight:900;color:#17322d;line-height:1.35}
+.article-summary.data-v-a5ebea5b{margin-top:16rpx;color:#6d807b;font-size:25rpx;line-height:1.75}
+.article-cover.data-v-a5ebea5b{width:100%;height:300rpx;border-radius:24rpx;margin-top:24rpx}
+.article-time.data-v-a5ebea5b{margin:24rpx 0;color:#9aa5a2;font-size:22rpx}
+.article-content.data-v-a5ebea5b{padding-top:10rpx;border-top:1rpx solid #edf1ef}
+.article-content text.data-v-a5ebea5b{display:block;margin-top:24rpx;color:#263b37;font-size:28rpx;line-height:1.9}
+.empty.data-v-a5ebea5b{text-align:center;color:#7b8d88;line-height:1.8}.empty b.data-v-a5ebea5b,.empty text.data-v-a5ebea5b{display:block}

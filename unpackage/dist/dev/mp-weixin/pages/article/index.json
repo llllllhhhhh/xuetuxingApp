@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "文章中心",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "usingComponents": {}
+}

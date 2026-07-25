@@ -1,0 +1,9 @@
+{
+  "name": "xuetuxing-uniapp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "学徒行积分邀友与定制旅游融合小程序",
+  "uni-app": {
+    "vueVersion": "3"
+  }
+}

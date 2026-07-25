@@ -1,0 +1,36 @@
+
+.rules-card.data-v-0e9c7d0f {
+		margin-top: 22rpx
+}
+.rule-form.data-v-0e9c7d0f {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 25rpx 0;
+		border-bottom: 1rpx solid #e7ebe7
+}
+.rule-form>view.data-v-0e9c7d0f:first-child {
+		flex: 1
+}
+.rule-form b.data-v-0e9c7d0f,
+	.rule-form>view>text.data-v-0e9c7d0f {
+		display: block
+}
+.rule-form>view>text.data-v-0e9c7d0f {
+		font-size: 21rpx;
+		color: #778684;
+		margin-top: 8rpx
+}
+.num-input.data-v-0e9c7d0f {
+		display: flex;
+		align-items: center;
+		background: #f2f5f2;
+		border-radius: 15rpx;
+		padding: 0 15rpx
+}
+.num-input input.data-v-0e9c7d0f {
+		width: 95rpx;
+		height: 70rpx;
+		text-align: right;
+		margin-right: 8rpx
+}

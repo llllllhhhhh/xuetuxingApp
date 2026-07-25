@@ -1,0 +1,113 @@
+{
+    "name" : "学徒行",
+    "appid" : "__UNI__BB6A73F",
+    "description" : "积分邀请与定制旅行融合小程序",
+    "versionName" : "1.0.3",
+    "versionCode" : "103",
+    "transformPx" : false,
+    "vueVersion" : "3",
+    "h5" : {
+        "devServer" : {
+            "proxy" : {
+                "/api" : {
+                    "target" : "http://127.0.0.1:8000",
+                    "changeOrigin" : true,
+                    "ws" : true
+                },
+                "/uploads" : {
+                    "target" : "http://127.0.0.1:8000",
+                    "changeOrigin" : true
+                },
+                "/health" : {
+                    "target" : "http://127.0.0.1:8000",
+                    "changeOrigin" : true
+                }
+            }
+        }
+    },
+    "mp-weixin" : {
+        "appid" : "wx22a3637008b4f8b4",
+        "setting" : {
+            "urlCheck" : false,
+            "es6" : true,
+            "minified" : true
+        },
+        "permission" : {
+            "scope.userLocation" : {
+                "desc" : "用于为你推荐附近入驻学校、旅行路线和本地化服务"
+            },
+            "scope.camera" : {
+                "desc" : "用于扫码核销、拍照上传图片、拍摄视频和客服沟通"
+            },
+            "scope.writePhotosAlbum" : {
+                "desc" : "用于保存邀请海报、二维码和相关图片到相册"
+            }
+        },
+        "requiredPrivateInfos" : [ "getLocation", "chooseLocation" ]
+    },
+    "app-plus" : {
+        "distribute" : {
+            "android" : {
+                "permissions" : [
+                    "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>",
+                    "<uses-permission android:name=\"android.permission.CAMERA\"/>",
+                    "<uses-permission android:name=\"android.permission.RECORD_AUDIO\"/>",
+                    "<uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\"/>",
+                    "<uses-permission android:name=\"android.permission.VIBRATE\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\"/>",
+                    "<uses-permission android:name=\"android.permission.READ_MEDIA_IMAGES\"/>",
+                    "<uses-permission android:name=\"android.permission.READ_MEDIA_VIDEO\"/>",
+                    "<uses-permission android:name=\"android.permission.READ_MEDIA_VISUAL_USER_SELECTED\"/>",
+                    "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\" android:maxSdkVersion=\"32\"/>"
+                ]
+            },
+            "ios" : {
+                "dSYMs" : false,
+                "privacyDescription" : {
+                    "NSCameraUsageDescription" : "用于扫码核销、拍照上传图片、拍摄视频和客服沟通",
+                    "NSPhotoLibraryUsageDescription" : "用于从相册选择图片或视频，作为客服沟通、学校认证、合同资料或其他上传材料",
+                    "NSPhotoLibraryAddUsageDescription" : "用于保存邀请海报、二维码和相关图片到相册",
+                    "NSLocationWhenInUseUsageDescription" : "用于为你推荐附近入驻学校、旅行路线和本地化服务",
+                    "NSMicrophoneUsageDescription" : "用于拍摄视频时录制声音，以及后续语音、视频沟通功能"
+                }
+            },
+            "icons" : {
+                "android" : {
+                    "hdpi" : "unpackage/res/icons/72x72.png",
+                    "xhdpi" : "unpackage/res/icons/96x96.png",
+                    "xxhdpi" : "unpackage/res/icons/144x144.png",
+                    "xxxhdpi" : "unpackage/res/icons/192x192.png"
+                },
+                "ios" : {
+                    "appstore" : "unpackage/res/icons/1024x1024.png",
+                    "ipad" : {
+                        "app" : "unpackage/res/icons/76x76.png",
+                        "app@2x" : "unpackage/res/icons/152x152.png",
+                        "notification" : "unpackage/res/icons/20x20.png",
+                        "notification@2x" : "unpackage/res/icons/40x40.png",
+                        "proapp@2x" : "unpackage/res/icons/167x167.png",
+                        "settings" : "unpackage/res/icons/29x29.png",
+                        "settings@2x" : "unpackage/res/icons/58x58.png",
+                        "spotlight" : "unpackage/res/icons/40x40.png",
+                        "spotlight@2x" : "unpackage/res/icons/80x80.png"
+                    },
+                    "iphone" : {
+                        "app@2x" : "unpackage/res/icons/120x120.png",
+                        "app@3x" : "unpackage/res/icons/180x180.png",
+                        "notification@2x" : "unpackage/res/icons/40x40.png",
+                        "notification@3x" : "unpackage/res/icons/60x60.png",
+                        "settings@2x" : "unpackage/res/icons/58x58.png",
+                        "settings@3x" : "unpackage/res/icons/87x87.png",
+                        "spotlight@2x" : "unpackage/res/icons/80x80.png",
+                        "spotlight@3x" : "unpackage/res/icons/120x120.png"
+                    }
+                }
+            },
+            "splashscreen" : {
+                "androidStyle" : "common"
+            }
+        }
+    }
+}

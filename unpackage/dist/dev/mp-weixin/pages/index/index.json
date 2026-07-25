@@ -1,0 +1,9 @@
+{
+  "navigationStyle": "custom",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "app-header": "../../components/AppHeader",
+    "bottom-nav": "../../components/BottomNav"
+  }
+}
