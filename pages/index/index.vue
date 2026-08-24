@@ -45,7 +45,6 @@
           </view>
 
           <view v-else-if="block.type === 'smart'" class="smart-block" :style="smartStyle(block)" @click="go(block.link || '/pages/custom/params')">
-            <view v-if="smartIcon(block)" class="smart-icon" :style="{ color: block.iconColor || block.textColor || '' }">{{ smartIcon(block) }}</view>
             <view class="smart-main">
               <view class="tag" :style="{ color: block.labelColor || block.textColor || '' }">{{ block.label || 'AI 智能匹配' }}</view>
               <view class="smart-title" :style="{ color: block.titleColor || '' }">{{ block.title }}</view>
@@ -142,6 +141,7 @@ import { onHide, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import AppHeader from '../../components/AppHeader.vue'
 import BottomNav from '../../components/BottomNav.vue'
 import { getAnnouncements, getArticles, getInviteDashboard, getPublishedConfig, getPublicRoutes, getSchoolSites, isLoggedIn, trackPreference } from '../../utils/api.js'
+import { ONBOARDING_ROUTE, shouldShowOnboarding } from '../../utils/onboarding.js'
 
 const showPop = ref(false)
 const remoteBlocks = ref([])
@@ -217,27 +217,23 @@ const shadowMap = {
 }
 const cardStyle = (block, fallback = '#fff') => ({
   background: block?.background || fallback,
-  borderRadius: `${Number(block?.radius || 28)}rpx`,
+  borderRadius: '28rpx',
   padding: `${Number(block?.padding || 28)}rpx`,
   boxShadow: shadowMap[block?.shadow] || undefined,
 })
 const bannerStyle = block => ({
-  borderRadius: `${Number(block?.radius || 30)}rpx`,
+  borderRadius: '30rpx',
   height: `${Number(block?.height || 330)}rpx`,
   boxShadow: shadowMap[block?.shadow] || undefined,
 })
-const smartStyle = block => {
-  const style = cardStyle(block, '#dff5ef')
-  if (block?.image) {
-    style.backgroundImage = `url('${block.image}')`
-    style.backgroundSize = 'cover'
-    style.backgroundPosition = 'center'
-  }
-  return style
-}
+const smartStyle = block => ({
+  ...cardStyle(block, '#eef8f5'),
+  border: '1rpx solid #d7e9e4',
+  boxShadow: '0 12rpx 32rpx rgba(23,63,56,.07)',
+})
 const videoStyle = block => ({
   height: `${Number(block?.video_height || 330)}rpx`,
-  borderRadius: `${Number(block?.radius || 24)}rpx`,
+  borderRadius: '24rpx',
 })
 const spacerHeight = block => `${Number(block?.height || 40)}rpx`
 const homeGridItems = block => {
@@ -248,6 +244,7 @@ const homeGridItems = block => {
 }
 
 let refreshTimer = null
+let welcomeTimer = null
 const loadHome = async () => {
   const [config, routes, invite] = await Promise.all([
     getPublishedConfig(),
@@ -287,7 +284,6 @@ const stopAutoRefresh = () => {
   clearInterval(refreshTimer)
   refreshTimer = null
 }
-const smartIcon = block => block && Object.prototype.hasOwnProperty.call(block, 'icon') ? String(block.icon || '').trim() : '✦'
 const firstChar = item => String(item?.short_name || item?.name || '校').slice(0, 1)
 const go = url => {
   if (!url) return
@@ -429,8 +425,40 @@ const invite = () => {
   go('/pages/points/activity')
 }
 
+const showWelcomeAfterOnboarding = async () => {
+  if (uni.getStorageSync('welcomeSeen')) return
+  const cachedConfig = uni.getStorageSync('remoteConfig') || null
+  if (shouldShowOnboarding(cachedConfig)) return
+  const remoteConfig = await getPublishedConfig().catch(() => cachedConfig)
+  if (shouldShowOnboarding(remoteConfig)) return
+  clearTimeout(welcomeTimer)
+  welcomeTimer = setTimeout(() => {
+    if (!uni.getStorageSync('welcomeSeen')) showPop.value = true
+  }, 400)
+}
+
+const redirectToOnboardingIfNeeded = async () => {
+  const cachedConfig = uni.getStorageSync('remoteConfig') || null
+  if (shouldShowOnboarding(cachedConfig)) {
+    uni.reLaunch({ url: ONBOARDING_ROUTE })
+    return true
+  }
+  const remoteConfig = await getPublishedConfig().catch(() => cachedConfig)
+  if (shouldShowOnboarding(remoteConfig)) {
+    uni.reLaunch({ url: ONBOARDING_ROUTE })
+    return true
+  }
+  return false
+}
+
+const handleShow = async () => {
+  if (await redirectToOnboardingIfNeeded()) return
+  showWelcomeAfterOnboarding()
+  startAutoRefresh()
+}
+
 onMounted(() => {
-  if (!uni.getStorageSync('welcomeSeen')) setTimeout(() => showPop.value = true, 400)
+  showWelcomeAfterOnboarding()
   if (typeof window !== 'undefined') {
     window.addEventListener('scroll', scheduleVideoVisibilityCheck, { passive: true })
     window.addEventListener('resize', scheduleVideoVisibilityCheck)
@@ -438,11 +466,12 @@ onMounted(() => {
     document.addEventListener('webkitfullscreenchange', handleNativeFullscreenChange)
   }
 })
-onShow(startAutoRefresh)
+onShow(handleShow)
 onHide(stopAutoRefresh)
 onUnmounted(() => {
   stopAutoRefresh()
   clearTimeout(videoVisibilityTimer)
+  clearTimeout(welcomeTimer)
   if (typeof window !== 'undefined') {
     window.removeEventListener('scroll', scheduleVideoVisibilityCheck)
     window.removeEventListener('resize', scheduleVideoVisibilityCheck)
@@ -459,4 +488,9 @@ onPullDownRefresh(async () => {
 .remote-block{margin:0 0 20rpx}.remote-block:last-child{margin-bottom:8rpx}.remote-block>.hero{margin:0}.remote-block .card{margin-bottom:0}.remote-block+.remote-block>.dynamic-section{padding-top:2rpx}.dynamic-section .section-title{margin:0 0 16rpx}.video-playing .video-txt,.video-active .video-txt{opacity:0;visibility:hidden}.activity{display:flex;align-items:center;gap:18rpx;padding:25rpx 24rpx;border:2rpx solid #ffe0c7;border-radius:26rpx;box-shadow:0 8rpx 26rpx rgba(28,66,59,.05)}.activity-icon{font-size:44rpx}.activity-main{flex:1}.activity-title{font-size:25rpx;font-weight:800}.activity-btn{background:#ff7a35;color:#fff;padding:14rpx;border-radius:15rpx;font-size:22rpx}.activity-sub{margin-top:9rpx}.remote-block .grid{gap:14rpx}.remote-block .grid-item{padding:22rpx 8rpx;border-radius:22rpx}.task{display:flex;justify-content:space-between;padding:14rpx 0}.study-progress{margin-top:22rpx}.smart-block{display:flex;align-items:center;padding:28rpx;border-radius:26rpx;box-shadow:0 8rpx 26rpx rgba(18,165,148,.07)}.smart-icon{font-size:55rpx;color:#12a594;margin-right:22rpx}.smart-main{flex:1}.smart-title{font-size:34rpx;font-weight:900;margin:6rpx 0}.smart-arrow{width:65rpx;height:65rpx;border-radius:50%;background:#12a594;color:#fff;display:flex;align-items:center;justify-content:center;font-size:38rpx}.route-scroll{white-space:nowrap;padding:2rpx 0 8rpx}.home-route{display:inline-block;width:300rpx;background:#fff;border-radius:22rpx;overflow:hidden;margin-right:16rpx;vertical-align:top;box-shadow:0 8rpx 24rpx rgba(28,66,59,.06)}.home-route:last-child{margin-right:0}.home-route image{width:100%;height:190rpx}.home-route-body{padding:17rpx 18rpx 19rpx}.home-route-body b,.home-route-body text{display:block;white-space:normal}.home-route-body text{font-size:22rpx;color:#778684;margin-top:7rpx}.list-section{background:#fff;border-radius:26rpx;padding:26rpx 24rpx;box-shadow:0 8rpx 24rpx rgba(28,66,59,.05)}.list-section .section-title{margin:0}.home-list-item{display:flex;align-items:center;gap:18rpx;padding:20rpx 0;border-bottom:1rpx solid #edf1ef}.home-list-item:last-child{border-bottom:0}.home-list-avatar,.home-list-logo{width:76rpx;height:76rpx;border-radius:22rpx;flex-shrink:0}.home-list-avatar{background:#eaf7f3;color:#173f38;display:flex;align-items:center;justify-content:center;font-weight:900}.home-list-main{flex:1;min-width:0}.home-list-main b,.home-list-main text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.home-list-main b{font-size:26rpx;color:#172c2a}.home-list-main text{margin-top:6rpx;color:#82918d;font-size:21rpx}.home-list-arrow{color:#9aa8a4;font-size:30rpx}.empty-list{text-align:center;color:#879591;padding:30rpx}.video-card{height:330rpx;border-radius:26rpx;overflow:hidden;position:relative;box-shadow:0 10rpx 28rpx rgba(17,47,42,.09);background:#173f38}.video-card:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(9,35,31,0),rgba(9,35,31,.58));pointer-events:none}.video-active:after{display:none}.video-card image,.video-player{width:100%;height:100%;display:block}.video-cover{position:absolute;z-index:2;inset:0}.video-cover image{width:100%;height:100%;display:block}.play{position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);width:78rpx;height:78rpx;border-radius:50%;background:rgba(255,255,255,.9);color:#ff7a35;display:flex;align-items:center;justify-content:center;font-size:0}.play:before{content:'';position:absolute;left:50%;top:50%;width:0;height:0;border-top:14rpx solid transparent;border-bottom:14rpx solid transparent;border-left:22rpx solid #ff7a35;transform:translate(-33%,-50%)}.video-txt{position:absolute;z-index:1;left:24rpx;right:24rpx;bottom:24rpx;color:#fff;font-weight:800;pointer-events:none}.notice-block{text-align:center;padding:22rpx 20rpx 26rpx;color:#778684}.notice-block b,.notice-block text{display:block}.notice-block text{font-size:22rpx;margin-top:7rpx}.spacer-block{background:transparent}.mask{position:fixed;inset:0;background:rgba(9,28,25,.6);z-index:80;display:flex;align-items:center;justify-content:center;padding:48rpx}.popup{width:100%;background:#fff;border-radius:38rpx;overflow:hidden}.pop-visual{height:230rpx;background:linear-gradient(160deg,#0b655d,#20a999);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-size:28rpx}.pop-visual text{font-size:92rpx}.pop-body{padding:38rpx}.pop-title{text-align:center;font-size:38rpx;font-weight:900}.pop-text{color:#778684;line-height:1.8;margin:20rpx 0 30rpx}.later{text-align:center;color:#899491;padding:24rpx}
 .video-active :deep(.uni-video-cover-play-button){display:none!important}
 .video-player :deep(video){object-fit:contain!important}
+.smart-block{gap:22rpx;min-height:148rpx}
+.smart-main{min-width:0}
+.smart-main .tag{margin-bottom:5rpx;font-size:22rpx;font-weight:700}
+.smart-title{margin:0 0 5rpx;font-size:32rpx;line-height:1.35}
+.smart-main .sub{font-size:22rpx;line-height:1.5}
 </style>

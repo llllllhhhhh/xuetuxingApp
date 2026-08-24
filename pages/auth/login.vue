@@ -19,13 +19,60 @@
         <view class="star star-1">✦</view>
         <view class="star star-2">✹</view>
       </view>
+      <!-- #ifdef MP-WEIXIN -->
+      <view class="hero-title">欢迎来到学徒行</view>
+      <!-- #endif -->
+      <!-- #ifndef MP-WEIXIN -->
       <view class="hero-title">{{ tab === 'login' ? '欢迎回来' : '加入学徒行' }}</view>
+      <!-- #endif -->
       <view class="hero-desc">
+        <!-- #ifdef MP-WEIXIN -->
+        微信一键登录后，同步积分、旅行、学习权益和客服记录。
+        <!-- #endif -->
+        <!-- #ifndef MP-WEIXIN -->
         {{ tab === 'login' ? '登录后同步消息、客服记录、收藏路线与积分权益。' : '注册提交后需管理员审核，通过后即可登录使用。' }}
+        <!-- #endif -->
       </view>
     </view>
 
     <view class="auth-card">
+      <!-- #ifdef MP-WEIXIN -->
+      <view class="mini-login-card">
+        <view class="mini-login-head">
+          <view class="mini-wechat-mark">微</view>
+          <view>
+            <b>微信一键登录</b>
+            <text>选择微信认证手机号后直接登录</text>
+          </view>
+        </view>
+        <view class="mini-benefits">
+          <text>积分与签到</text>
+          <text>学习与旅行权益</text>
+          <text>订单与客服记录</text>
+        </view>
+        <view class="agreement" @click="agreed = !agreed">
+          <view :class="['check', { on: agreed }]">✓</view>
+          <view>
+            我已阅读并同意
+            <text @click.stop="openArticle('user-agreement')">《用户协议》</text>
+            和
+            <text @click.stop="openArticle('privacy-policy')">《隐私政策》</text>
+          </view>
+        </view>
+        <button
+          class="wechat-login-btn"
+          open-type="getPhoneNumber"
+          :loading="wechatLoading"
+          :disabled="wechatLoading || !agreed"
+          @getphonenumber="wechatLogin"
+        >
+          {{ wechatLoading ? '正在登录...' : '选择微信手机号登录' }}
+        </button>
+        <view v-if="form.inviteCode" class="mini-invite-tip">已识别好友邀请，首次登录后自动绑定</view>
+      </view>
+      <!-- #endif -->
+
+      <!-- #ifndef MP-WEIXIN -->
       <view class="mode-switch">
         <view :class="['mode-item', { active: tab === 'login' }]" @click="switchTab('login')">登录</view>
         <view :class="['mode-item', { active: tab === 'register' }]" @click="switchTab('register')">注册</view>
@@ -78,7 +125,28 @@
           {{ tab === 'login' ? '还没有账号？切换到注册，审核通过后即可登录。' : '已有账号？切换到登录继续使用你的权益。' }}
         </view>
       </view>
+      <!-- #endif -->
     </view>
+
+    <!-- #ifndef MP-WEIXIN -->
+    <view v-if="showSlider" class="slider-mask" @click.self="closeSlider">
+      <view class="slider-panel">
+        <view class="slider-panel-head">
+          <view>
+            <b>登录安全验证</b>
+            <text>完成滑块后将自动登录</text>
+          </view>
+          <view class="slider-close" @click="closeSlider">×</view>
+        </view>
+        <SliderCaptcha
+          ref="sliderRef"
+          scope="user"
+          @verified="handleSliderVerified"
+          @reset="sliderTicket = ''"
+        />
+      </view>
+    </view>
+    <!-- #endif -->
 
     <view class="api-diagnostic">
       <view class="api-status">
@@ -94,8 +162,9 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getApiBaseUrl, getInviteDeviceId, loginUser, registerUser, testApiConnection } from '../../utils/api.js'
+import { getApiBaseUrl, getInviteDeviceId, loginUser, loginWechatMini, registerUser, testApiConnection } from '../../utils/api.js'
 import { scanCodeWithPermission } from '../../utils/permissions.js'
+import SliderCaptcha from '../../components/SliderCaptcha.vue'
 
 const tab = ref('login')
 const agreed = ref(true)
@@ -103,9 +172,26 @@ const form = reactive({ phone: '', nickname: '', password: '', inviteCode: '' })
 const apiUrl = ref(getApiBaseUrl())
 const checking = ref(false)
 const diagnosticOk = ref(false)
+const sliderTicket = ref('')
+const sliderRef = ref(null)
+const showSlider = ref(false)
+const wechatLoading = ref(false)
 
 const switchTab = value => {
   tab.value = value
+  sliderTicket.value = ''
+  showSlider.value = false
+}
+
+const closeSlider = () => {
+  showSlider.value = false
+  sliderTicket.value = ''
+}
+
+const handleSliderVerified = ticket => {
+  sliderTicket.value = ticket
+  showSlider.value = false
+  submit()
 }
 
 const parseInviteCode = value => {
@@ -120,9 +206,71 @@ const applyInviteCode = value => {
   const code = parseInviteCode(value)
   if (!code) return false
   form.inviteCode = code
+  // #ifdef MP-WEIXIN
+  uni.setStorageSync('pendingInviteCode', code)
+  return true
+  // #endif
   tab.value = 'register'
   uni.setStorageSync('pendingInviteCode', code)
   return true
+}
+
+const getWechatLoginCode = () => new Promise((resolve, reject) => {
+  uni.login({
+    provider: 'weixin',
+    success: result => result.code ? resolve(result.code) : reject(new Error('未获取到微信登录凭证')),
+    fail: error => reject(new Error(error.errMsg || '微信登录失败')),
+  })
+})
+
+const showPhoneAuthorizationError = detail => {
+  const errMsg = String(detail?.errMsg || '').trim()
+  let message = '微信没有返回认证手机号凭证，请稍后重试。'
+  if (/deny|cancel/i.test(errMsg)) {
+    message = '你取消了手机号授权，需要选择微信认证手机号后才能登录。'
+  } else if (/permission|auth deny|access denied|not authorized/i.test(errMsg)) {
+    message = '当前小程序没有手机号接口权限，请先在微信公众平台完成主体认证并开通手机号快速验证能力。'
+  } else if (/frequency|frequent|too many/i.test(errMsg)) {
+    message = '手机号授权调用过于频繁，请稍后再试。'
+  } else if (/getPhoneNumber:ok/i.test(errMsg)) {
+    message = '微信授权成功但没有返回手机号 code，请升级微信客户端后重新进入小程序。'
+  }
+  console.error('[wechat-phone-login] getPhoneNumber failed', detail || {})
+  uni.showModal({
+    title: '手机号授权失败',
+    content: `${message}\n\n微信返回：${errMsg || '无错误信息'}`,
+    showCancel: false,
+  })
+}
+
+const wechatLogin = async event => {
+  if (wechatLoading.value) return
+  if (!agreed.value) {
+    uni.showToast({ title: '请先同意用户协议和隐私政策', icon: 'none' })
+    return
+  }
+  const phoneCode = event?.detail?.code
+  if (!phoneCode) {
+    showPhoneAuthorizationError(event?.detail)
+    return
+  }
+  wechatLoading.value = true
+  try {
+    const code = await getWechatLoginCode()
+    await loginWechatMini({
+      code,
+      phone_code: phoneCode,
+      invite_code: form.inviteCode || uni.getStorageSync('pendingInviteCode') || '',
+      device_id: getInviteDeviceId(),
+    })
+    uni.removeStorageSync('pendingInviteCode')
+    uni.showToast({ title: '登录成功', icon: 'success' })
+    setTimeout(backOrHome, 500)
+  } catch (error) {
+    uni.showToast({ title: error.message || '微信登录失败', icon: 'none' })
+  } finally {
+    wechatLoading.value = false
+  }
 }
 
 const scanInvite = () => {
@@ -192,7 +340,11 @@ const submit = async () => {
   }
   try {
     if (tab.value === 'login') {
-      await loginUser({ account: form.phone, password: form.password })
+      if (!sliderTicket.value) {
+        showSlider.value = true
+        return
+      }
+      await loginUser({ account: form.phone, password: form.password, slider_ticket: sliderTicket.value })
       uni.showToast({ title: '登录成功', icon: 'success' })
       setTimeout(backOrHome, 500)
       return
@@ -210,6 +362,8 @@ const submit = async () => {
     tab.value = 'login'
     form.password = ''
   } catch (error) {
+    sliderTicket.value = ''
+    showSlider.value = false
     uni.showToast({ title: error.message || '操作失败', icon: 'none' })
   }
 }
@@ -238,7 +392,7 @@ const submit = async () => {
   padding:34rpx 34rpx 40rpx;
   border-radius:42rpx;
   overflow:hidden;
-  background:linear-gradient(135deg,#142b28 0%,#173f39 62%,#225d52 100%);
+  background:linear-gradient(145deg,#173a35 0%,#205149 58%,#2d6a60 100%);
   box-shadow:0 22rpx 60rpx rgba(14,55,49,.18);
   color:#fff;
 }
@@ -249,7 +403,7 @@ const submit = async () => {
   height:310rpx;
   right:-100rpx;
   top:-70rpx;
-  border:44rpx solid rgba(255,255,255,.055);
+  border:44rpx solid rgba(255,255,255,.028);
   border-radius:50%;
 }
 .brand-row{position:relative;z-index:2;display:flex;align-items:center;gap:18rpx}
@@ -273,6 +427,19 @@ const submit = async () => {
   box-shadow:0 22rpx 60rpx rgba(18,55,49,.12);
   backdrop-filter:blur(18rpx);
 }
+.mini-login-card{padding:20rpx 10rpx 12rpx}
+.mini-login-head{display:flex;align-items:center;gap:20rpx;padding:12rpx 8rpx 24rpx}
+.mini-login-head>view:last-child{flex:1;min-width:0}
+.mini-login-head b,.mini-login-head text{display:block}
+.mini-login-head b{font-size:34rpx;color:#102c27}
+.mini-login-head text{margin-top:8rpx;color:#7d8c88;font-size:23rpx}
+.mini-wechat-mark{width:82rpx;height:82rpx;display:grid;place-items:center;border-radius:24rpx;background:#07c160;color:#fff;font-size:31rpx;font-weight:900;box-shadow:0 12rpx 28rpx rgba(7,193,96,.2)}
+.mini-benefits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10rpx;margin-bottom:26rpx}
+.mini-benefits text{min-width:0;padding:16rpx 8rpx;border-radius:18rpx;background:#f2f7f4;color:#55706a;text-align:center;font-size:20rpx;line-height:1.35}
+.wechat-login-btn{height:94rpx;margin:0;border:0;border-radius:999rpx;background:#07c160;color:#fff;font-size:30rpx;font-weight:900;line-height:94rpx;box-shadow:0 16rpx 34rpx rgba(7,193,96,.22)}
+.wechat-login-btn:after{border:0}
+.wechat-login-btn[disabled]{background:#91dcb4;color:rgba(255,255,255,.9)}
+.mini-invite-tip{margin-top:18rpx;color:#0d8f80;text-align:center;font-size:22rpx;font-weight:800}
 .mode-switch{display:flex;padding:8rpx;border-radius:30rpx;background:#eef3ef}
 .mode-item{flex:1;height:78rpx;display:grid;place-items:center;border-radius:25rpx;color:#7c8d88;font-size:29rpx;font-weight:900;transition:.22s}
 .mode-item.active{background:#fff;color:#102c27;box-shadow:0 10rpx 26rpx rgba(21,55,49,.1)}
@@ -303,4 +470,11 @@ const submit = async () => {
 .api-dot{width:14rpx;height:14rpx;border-radius:50%;background:#aab5b2}.api-dot.ok{background:#12a594;box-shadow:0 0 0 7rpx rgba(18,165,148,.12)}
 .api-url{display:block;margin:14rpx 0;color:#657873;font-size:20rpx;line-height:1.5;word-break:break-all}
 .api-test{padding:18rpx;border-radius:19rpx;background:#173f39;color:#fff;text-align:center;font-size:23rpx;font-weight:900}
+.slider-mask{position:fixed;left:0;right:0;top:0;bottom:0;z-index:99;display:flex;align-items:center;justify-content:center;padding:30rpx;background:rgba(16,35,39,.52);backdrop-filter:blur(8rpx)}
+.slider-panel{width:100%;max-width:720rpx;padding:24rpx;border:1rpx solid #e1e7e4;border-radius:28rpx;background:#fff;box-shadow:0 30rpx 80rpx rgba(16,44,39,.22)}
+.slider-panel-head{display:flex;align-items:center;justify-content:space-between;gap:20rpx;margin-bottom:18rpx}
+.slider-panel-head b,.slider-panel-head text{display:block}
+.slider-panel-head b{color:#102c27;font-size:30rpx;font-weight:900}
+.slider-panel-head text{margin-top:6rpx;color:#7d8c88;font-size:22rpx}
+.slider-close{display:grid;width:52rpx;height:52rpx;place-items:center;border-radius:50%;background:#f2f5f3;color:#52635f;font-size:32rpx;font-weight:800}
 </style>

@@ -4,7 +4,7 @@
       <view class="avatar">{{ avatarText }}</view>
       <view class="info">
         <view class="name">{{ user?.nickname || '学徒行用户' }}</view>
-        <view class="meta">{{ user?.user_no || '未生成编号' }}</view>
+        <view class="meta">{{ profileMajor }}</view>
       </view>
       <view class="status">{{ identity }}</view>
     </view>
@@ -38,7 +38,7 @@
         <text class="arrow">›</text>
       </view>
       <view class="action" @click="go('/pages/mine/graduation')">
-        <view><b>录取通知书认证</b><text>上传认证材料，解锁上岸权益</text></view>
+        <view><b>个人认证</b><text>上传认证材料，完善个人身份信息</text></view>
         <text class="arrow">›</text>
       </view>
       <view class="action" @click="go('/pages/support/chat')">
@@ -57,11 +57,19 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { clearUserSession, fetchMe, getCurrentUser, isLoggedIn } from '../../utils/api.js'
+import { clearUserSession, fetchMe, getCurrentUser, getGraduationCertification, isLoggedIn } from '../../utils/api.js'
 
 const user = ref(getCurrentUser())
+const certification = ref(null)
 const avatarText = computed(() => String(user.value?.nickname || '徒').slice(0, 1))
 const identity = computed(() => user.value?.exam_status || '学员')
+const profileMajor = computed(() => {
+  const major = String(certification.value?.major_name || '').trim()
+  if (major) return major
+  if (certification.value?.status === 'pending') return '个人认证审核中'
+  if (certification.value?.status === 'rejected') return '个人认证未通过'
+  return '未完成个人认证'
+})
 
 const formatTime = value => {
   if (!value) return '-'
@@ -94,6 +102,11 @@ onShow(async () => {
   try {
     user.value = await fetchMe()
   } catch {}
+  try {
+    certification.value = await getGraduationCertification()
+  } catch {
+    certification.value = null
+  }
 })
 </script>
 

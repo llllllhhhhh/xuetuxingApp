@@ -30,6 +30,7 @@
                 <view class="actions">
                   <view class="order-action" @click="openContract(order)">{{ contractActionText(order) }}</view>
                   <view v-if="order.contract_status === TRAVEL_CONTRACT_STATUS.APPROVED" class="order-action" @click="openFulfillment(order)">出行履约 →</view>
+                  <view v-if="canCancelOrder(order)" class="order-action danger" @click="requestCancelOrder(order)">取消订单</view>
                 </view>
               </view>
             </view>
@@ -42,7 +43,7 @@
             <view class="order card" v-for="order in doneOrders" :key="order.id">
               <image :src="orderCoverImage(order)" mode="aspectFill" />
               <view class="order-main">
-                <view class="tag">已完成</view>
+                <view class="tag">{{ fulfillmentText(order) }}</view>
                 <b>{{ order.title }}</b>
                 <text class="sub">{{ order.travel_date || '已完成' }} · {{ order.amount_text || '权益订单' }}</text>
                 <view :class="['contract-state', contractClass(order)]">{{ contractText(order) }}</view>
@@ -223,6 +224,7 @@
             <b>出行核销二维码</b>
             <image class="qr-image" :src="checkinQrUrl" mode="aspectFit" />
             <view class="qr-box" @click="copyCheckinToken">{{ selectedOrder.qr_token }}</view>
+            <text v-if="selectedOrder.qr_expires_at">有效期至：{{ formatDateTime(selectedOrder.qr_expires_at) }}</text>
             <text>出行当天由工作人员扫码核销；扫码失败时可手动输入下方核销码。请勿提前转发给他人。</text>
           </view>
         </view>
@@ -234,7 +236,7 @@
 <script setup>
 import { computed, nextTick, reactive, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { confirmTravelPickup, getCurrentUser, getMyTravelOrders, getTravelContractTemplate, isLoggedIn, signTravelContract, submitTravelPickupInfo } from '../../utils/api.js'
+import { cancelTravelOrder, confirmTravelPickup, getCurrentUser, getMyTravelOrders, getTravelContractTemplate, isLoggedIn, signTravelContract, submitTravelPickupInfo } from '../../utils/api.js'
 import {
   TRAVEL_CONTRACT_STATUS,
   TRAVEL_FULFILLMENT_STATUS,
@@ -258,7 +260,7 @@ const signing = ref(false)
 const lastPoint = ref(null)
 const contractError = ref('')
 const pickupError = ref('')
-const tabs = ['待出行订单', '已完成订单', '收藏路线']
+const tabs = ['待出行订单', '历史订单', '收藏路线']
 const form = reactive({ signer_name: '', signer_phone: '', id_no: '', travel_date: '' })
 const pickupForm = reactive({
   pickup_address: '',
@@ -287,13 +289,22 @@ const favs = [
 ]
 
 const pendingOrders = computed(() => orders.value.filter(order => !isTravelFinished(order.fulfillment_status)))
-const doneOrders = computed(() => orders.value.filter(order => order.fulfillment_status === TRAVEL_FULFILLMENT_STATUS.COMPLETED))
+const doneOrders = computed(() => orders.value.filter(order => isTravelFinished(order.fulfillment_status)))
 const signedCount = computed(() => orders.value.filter(order => order.contract_status === TRAVEL_CONTRACT_STATUS.APPROVED).length)
 const progressWidth = computed(() => `${Math.round((signedCount.value / Math.max(orders.value.length, 1)) * 100)}%`)
 const readonlyContract = computed(() => [TRAVEL_CONTRACT_STATUS.PENDING, TRAVEL_CONTRACT_STATUS.APPROVED].includes(selectedOrder.value?.contract_status))
 const hasPickupInfo = computed(() => !!selectedOrder.value?.pickup_address)
 const hasPickupSchedule = computed(() => !!selectedOrder.value?.pickup_time)
 const hasQrToken = computed(() => !!selectedOrder.value?.qr_token)
+const userCancellableStatuses = new Set([
+  TRAVEL_FULFILLMENT_STATUS.CONTRACT_PENDING,
+  TRAVEL_FULFILLMENT_STATUS.CONTRACT_REVIEWING,
+  TRAVEL_FULFILLMENT_STATUS.CONTRACT_REJECTED,
+  TRAVEL_FULFILLMENT_STATUS.INFO_PENDING,
+  TRAVEL_FULFILLMENT_STATUS.INFO_SUBMITTED,
+])
+const canCancelOrder = order => userCancellableStatuses.has(order?.fulfillment_status)
+const formatDateTime = value => value ? String(value).replace('T', ' ').slice(0, 16) : '-'
 const checkinPayload = computed(() => selectedOrder.value?.qr_token ? `xuetuxing-checkin://${selectedOrder.value.qr_token}` : '')
 const checkinQrUrl = computed(() => checkinPayload.value
   ? `https://api.qrserver.com/v1/create-qr-code/?size=420x420&margin=12&data=${encodeURIComponent(checkinPayload.value)}`
@@ -823,12 +834,32 @@ const confirmPickup = async () => {
   }
 }
 
+const requestCancelOrder = order => {
+  uni.showModal({
+    title: '取消旅行订单',
+    content: '取消后将原路退回本次兑换积分并恢复路线库存。确认继续吗？',
+    confirmText: '确认取消',
+    confirmColor: '#c34a32',
+    success: async result => {
+      if (!result.confirm) return
+      try {
+        const saved = await cancelTravelOrder(order.id, '用户主动取消')
+        mergeSavedOrder(saved)
+        await loadOrders()
+        toast('订单已取消，积分已退回')
+      } catch (error) {
+        toast(error.message || '订单取消失败')
+      }
+    },
+  })
+}
+
 onLoad(loadOrders)
 onShow(loadOrders)
 </script>
 
 <style scoped>
-.status-card{background:linear-gradient(145deg,#fff4e8,#e6f6f2);padding:30rpx;border-radius:30rpx;margin-bottom:24rpx}.status-title{font-size:36rpx;font-weight:900;margin:25rpx 0}.status-card .progress{margin-bottom:12rpx}.order{display:flex;gap:22rpx}.order image{width:190rpx;height:190rpx;border-radius:20rpx}.order-main{flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:10rpx;min-width:0}.order-main b{line-height:1.35}.actions{display:flex;gap:16rpx;flex-wrap:wrap}.order-action{color:#ff7a35;font-size:24rpx;font-weight:800}.contract-state{padding:7rpx 14rpx;border-radius:999rpx;font-size:21rpx;font-weight:800}.contract-state.unsigned{background:#f0f4f2;color:#65736f}.contract-state.pending{background:#fff4e5;color:#b96d1d}.contract-state.approved{background:#e3f7ef;color:#0a8a78}.contract-state.rejected{background:#ffeeeb;color:#c34a32}.empty{text-align:center;padding:100rpx 20rpx}.empty view{font-size:64rpx}.empty b,.empty text{display:block;margin-top:18rpx}.empty text{color:#778684}.identity-demo{margin-top:35rpx}.state{display:flex;justify-content:space-between;gap:20rpx;padding:18rpx 0;border-bottom:1rpx solid #e7ebe7}.state text{font-size:23rpx;color:#778684;text-align:right}.contract-mask{position:fixed;inset:0;z-index:1000;background:rgba(16,39,36,.48);display:flex;align-items:flex-end}.contract-panel{position:relative;width:100%;max-height:88vh;overflow:auto;background:#fff;border-radius:34rpx 34rpx 0 0;padding:30rpx 28rpx calc(34rpx + env(safe-area-inset-bottom));box-shadow:0 -18rpx 60rpx rgba(12,39,35,.2)}.contract-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20rpx;margin-bottom:22rpx;padding-right:92rpx}.contract-head text,.contract-head b{display:block}.contract-head text{color:#12a594;font-size:22rpx;font-weight:900}.contract-head b{margin-top:8rpx;font-size:34rpx;line-height:1.35}.close-btn{position:sticky;top:0;float:right;z-index:5;width:62rpx;height:62rpx;margin:0 0 -62rpx auto;padding:0;border:0;border-radius:18rpx;background:#f2f5f3;color:#173f38;font-size:38rpx;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 8rpx 24rpx rgba(16,39,36,.08)}.close-btn:after,.submit-btn:after{border:0}.contract-summary,.contract-history,.date-section{display:grid;gap:10rpx;margin-bottom:22rpx;padding:22rpx;border-radius:22rpx;background:#f6faf8;color:#5b6d68;font-size:23rpx}.contract-history b,.date-section b{color:#173f38;font-size:25rpx}.date-options{display:flex;gap:12rpx;flex-wrap:wrap}.date-option{padding:13rpx 18rpx;border-radius:999rpx;background:#fff;border:1rpx solid #dfe9e5;color:#526560;font-weight:800}.date-option.on{background:#173f38;border-color:#173f38;color:#fff}.date-section input{height:76rpx;border:1rpx solid #dfe9e5;border-radius:18rpx;padding:0 20rpx;background:#fff;font-size:25rpx;box-sizing:border-box}.date-section.invalid input{border-color:#ff5c3d;background:#fff8f6}.form-grid label,.form-grid uni-label{display:block;margin-bottom:18rpx}.form-grid text{display:block;margin-bottom:9rpx;color:#173f38;font-size:23rpx;font-weight:900}.form-grid input,.form-grid uni-input{height:78rpx;border:1rpx solid #dfe9e5;border-radius:18rpx;padding:0 20rpx;background:#fbfdfc;font-size:25rpx;box-sizing:border-box}.form-grid input:disabled{color:#5b6d68;background:#f6faf8}.form-grid label.invalid input,.form-grid uni-label.invalid uni-input{border-color:#ff5c3d;background:#fff8f6}.contract-terms{padding:22rpx;border-radius:22rpx;background:#fff7ec;color:#8a6944;margin-bottom:22rpx}.contract-terms b,.contract-terms text{display:block}.contract-terms b{color:#9c5d1b;margin-bottom:8rpx}.contract-terms text{font-size:22rpx;line-height:1.7}.contract-content{background:#fbfdfc;color:#526560;border:1rpx solid #e1ebe7}.contract-content b{color:#173f38}.contract-content text{white-space:pre-wrap}.signature-box{border:1rpx solid #dfe9e5;border-radius:22rpx;overflow:hidden;margin-bottom:18rpx}.signature-title{height:70rpx;padding:0 20rpx;display:flex;align-items:center;justify-content:space-between;background:#f7faf8}.signature-title b{font-size:24rpx}.signature-title text{color:#ff7a35;font-weight:900}.signature-canvas{position:relative;width:100%;height:260rpx;background:#fff;display:block;overflow:hidden;touch-action:none;cursor:crosshair}.signature-svg{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;pointer-events:none}.signature-stroke{fill:none;stroke:#173f38;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.signature-preview{padding:22rpx;border:1rpx solid #dfe9e5;border-radius:22rpx;margin-bottom:18rpx;background:#fbfdfc}.signature-preview b{display:block;margin-bottom:12rpx;color:#173f38}.signature-preview image{width:100%;height:220rpx;background:#fff;border:1rpx dashed #d7e2de;border-radius:16rpx}.reject-box,.contract-error{padding:18rpx 20rpx;margin-bottom:18rpx;border-radius:18rpx;background:#fff0ed;color:#b94732;font-size:23rpx;line-height:1.6}.contract-error{font-weight:900;border:1rpx solid #ffd2c8}.submit-btn{width:100%;height:88rpx;margin:0;border:0;border-radius:24rpx;background:linear-gradient(135deg,#ff7a35,#ff985b);color:#fff;font-size:28rpx;font-weight:900;line-height:88rpx;display:flex;align-items:center;justify-content:center;text-align:center}.submit-btn:disabled{opacity:.55}.contract-locked{padding:20rpx;border-radius:18rpx;background:#f3f7f5;color:#5b6d68;text-align:center;font-weight:900;font-size:24rpx}.fulfillment-section{margin-top:24rpx;padding-top:24rpx;border-top:1rpx solid #e7ebe7}.section-title{display:flex;align-items:center;justify-content:space-between;gap:16rpx;margin-bottom:18rpx}.section-title b{font-size:30rpx;color:#173f38}.section-title text{padding:8rpx 14rpx;border-radius:999rpx;background:#e3f7ef;color:#0a8a78;font-size:22rpx;font-weight:900}.fulfillment-flow{display:grid;grid-template-columns:1fr 1fr;gap:12rpx;margin-bottom:18rpx}.fulfillment-flow text{padding:14rpx 16rpx;border-radius:16rpx;background:#f2f5f3;color:#7b8a86;font-size:22rpx;font-weight:800}.fulfillment-flow text.on{background:#173f38;color:#fff}.pickup-form,.pickup-card,.qr-card{display:grid;gap:12rpx;margin-bottom:18rpx;padding:22rpx;border-radius:22rpx;background:#f6faf8;color:#526560;font-size:23rpx}.pickup-form label{display:block}.pickup-form text{display:block;margin-bottom:8rpx;color:#173f38;font-size:23rpx;font-weight:900}.pickup-form input{width:100%;height:76rpx;border:1rpx solid #dfe9e5;border-radius:18rpx;padding:0 20rpx;background:#fff;font-size:25rpx;box-sizing:border-box}.pickup-form label.invalid input{border-color:#ff5c3d;background:#fff8f6}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14rpx}.pickup-card b,.qr-card b{color:#173f38;font-size:25rpx}.pickup-card text,.qr-card text{display:block;line-height:1.6}.qr-box{padding:22rpx;border-radius:18rpx;background:#173f38;color:#fff;font-size:24rpx;font-weight:900;word-break:break-all;text-align:center;letter-spacing:1rpx}
+.status-card{background:linear-gradient(145deg,#fff4e8,#e6f6f2);padding:30rpx;border-radius:30rpx;margin-bottom:24rpx}.status-title{font-size:36rpx;font-weight:900;margin:25rpx 0}.status-card .progress{margin-bottom:12rpx}.order{display:flex;gap:22rpx}.order image{width:190rpx;height:190rpx;border-radius:20rpx}.order-main{flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:10rpx;min-width:0}.order-main b{line-height:1.35}.actions{display:flex;gap:16rpx;flex-wrap:wrap}.order-action{color:#ff7a35;font-size:24rpx;font-weight:800}.order-action.danger{color:#c34a32}.contract-state{padding:7rpx 14rpx;border-radius:999rpx;font-size:21rpx;font-weight:800}.contract-state.unsigned{background:#f0f4f2;color:#65736f}.contract-state.pending{background:#fff4e5;color:#b96d1d}.contract-state.approved{background:#e3f7ef;color:#0a8a78}.contract-state.rejected{background:#ffeeeb;color:#c34a32}.empty{text-align:center;padding:100rpx 20rpx}.empty view{font-size:64rpx}.empty b,.empty text{display:block;margin-top:18rpx}.empty text{color:#778684}.identity-demo{margin-top:35rpx}.state{display:flex;justify-content:space-between;gap:20rpx;padding:18rpx 0;border-bottom:1rpx solid #e7ebe7}.state text{font-size:23rpx;color:#778684;text-align:right}.contract-mask{position:fixed;inset:0;z-index:1000;background:rgba(16,39,36,.48);display:flex;align-items:flex-end}.contract-panel{position:relative;width:100%;max-height:88vh;overflow:auto;background:#fff;border-radius:34rpx 34rpx 0 0;padding:30rpx 28rpx calc(34rpx + env(safe-area-inset-bottom));box-shadow:0 -18rpx 60rpx rgba(12,39,35,.2)}.contract-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20rpx;margin-bottom:22rpx;padding-right:92rpx}.contract-head text,.contract-head b{display:block}.contract-head text{color:#12a594;font-size:22rpx;font-weight:900}.contract-head b{margin-top:8rpx;font-size:34rpx;line-height:1.35}.close-btn{position:sticky;top:0;float:right;z-index:5;width:62rpx;height:62rpx;margin:0 0 -62rpx auto;padding:0;border:0;border-radius:18rpx;background:#f2f5f3;color:#173f38;font-size:38rpx;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 8rpx 24rpx rgba(16,39,36,.08)}.close-btn:after,.submit-btn:after{border:0}.contract-summary,.contract-history,.date-section{display:grid;gap:10rpx;margin-bottom:22rpx;padding:22rpx;border-radius:22rpx;background:#f6faf8;color:#5b6d68;font-size:23rpx}.contract-history b,.date-section b{color:#173f38;font-size:25rpx}.date-options{display:flex;gap:12rpx;flex-wrap:wrap}.date-option{padding:13rpx 18rpx;border-radius:999rpx;background:#fff;border:1rpx solid #dfe9e5;color:#526560;font-weight:800}.date-option.on{background:#173f38;border-color:#173f38;color:#fff}.date-section input{height:76rpx;border:1rpx solid #dfe9e5;border-radius:18rpx;padding:0 20rpx;background:#fff;font-size:25rpx;box-sizing:border-box}.date-section.invalid input{border-color:#ff5c3d;background:#fff8f6}.form-grid label,.form-grid uni-label{display:block;margin-bottom:18rpx}.form-grid text{display:block;margin-bottom:9rpx;color:#173f38;font-size:23rpx;font-weight:900}.form-grid input,.form-grid uni-input{height:78rpx;border:1rpx solid #dfe9e5;border-radius:18rpx;padding:0 20rpx;background:#fbfdfc;font-size:25rpx;box-sizing:border-box}.form-grid input:disabled{color:#5b6d68;background:#f6faf8}.form-grid label.invalid input,.form-grid uni-label.invalid uni-input{border-color:#ff5c3d;background:#fff8f6}.contract-terms{padding:22rpx;border-radius:22rpx;background:#fff7ec;color:#8a6944;margin-bottom:22rpx}.contract-terms b,.contract-terms text{display:block}.contract-terms b{color:#9c5d1b;margin-bottom:8rpx}.contract-terms text{font-size:22rpx;line-height:1.7}.contract-content{background:#fbfdfc;color:#526560;border:1rpx solid #e1ebe7}.contract-content b{color:#173f38}.contract-content text{white-space:pre-wrap}.signature-box{border:1rpx solid #dfe9e5;border-radius:22rpx;overflow:hidden;margin-bottom:18rpx}.signature-title{height:70rpx;padding:0 20rpx;display:flex;align-items:center;justify-content:space-between;background:#f7faf8}.signature-title b{font-size:24rpx}.signature-title text{color:#ff7a35;font-weight:900}.signature-canvas{position:relative;width:100%;height:260rpx;background:#fff;display:block;overflow:hidden;touch-action:none;cursor:crosshair}.signature-svg{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;pointer-events:none}.signature-stroke{fill:none;stroke:#173f38;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.signature-preview{padding:22rpx;border:1rpx solid #dfe9e5;border-radius:22rpx;margin-bottom:18rpx;background:#fbfdfc}.signature-preview b{display:block;margin-bottom:12rpx;color:#173f38}.signature-preview image{width:100%;height:220rpx;background:#fff;border:1rpx dashed #d7e2de;border-radius:16rpx}.reject-box,.contract-error{padding:18rpx 20rpx;margin-bottom:18rpx;border-radius:18rpx;background:#fff0ed;color:#b94732;font-size:23rpx;line-height:1.6}.contract-error{font-weight:900;border:1rpx solid #ffd2c8}.submit-btn{width:100%;height:88rpx;margin:0;border:0;border-radius:24rpx;background:linear-gradient(135deg,#ff7a35,#ff985b);color:#fff;font-size:28rpx;font-weight:900;line-height:88rpx;display:flex;align-items:center;justify-content:center;text-align:center}.submit-btn:disabled{opacity:.55}.contract-locked{padding:20rpx;border-radius:18rpx;background:#f3f7f5;color:#5b6d68;text-align:center;font-weight:900;font-size:24rpx}.fulfillment-section{margin-top:24rpx;padding-top:24rpx;border-top:1rpx solid #e7ebe7}.section-title{display:flex;align-items:center;justify-content:space-between;gap:16rpx;margin-bottom:18rpx}.section-title b{font-size:30rpx;color:#173f38}.section-title text{padding:8rpx 14rpx;border-radius:999rpx;background:#e3f7ef;color:#0a8a78;font-size:22rpx;font-weight:900}.fulfillment-flow{display:grid;grid-template-columns:1fr 1fr;gap:12rpx;margin-bottom:18rpx}.fulfillment-flow text{padding:14rpx 16rpx;border-radius:16rpx;background:#f2f5f3;color:#7b8a86;font-size:22rpx;font-weight:800}.fulfillment-flow text.on{background:#173f38;color:#fff}.pickup-form,.pickup-card,.qr-card{display:grid;gap:12rpx;margin-bottom:18rpx;padding:22rpx;border-radius:22rpx;background:#f6faf8;color:#526560;font-size:23rpx}.pickup-form label{display:block}.pickup-form text{display:block;margin-bottom:8rpx;color:#173f38;font-size:23rpx;font-weight:900}.pickup-form input{width:100%;height:76rpx;border:1rpx solid #dfe9e5;border-radius:18rpx;padding:0 20rpx;background:#fff;font-size:25rpx;box-sizing:border-box}.pickup-form label.invalid input{border-color:#ff5c3d;background:#fff8f6}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14rpx}.pickup-card b,.qr-card b{color:#173f38;font-size:25rpx}.pickup-card text,.qr-card text{display:block;line-height:1.6}.qr-box{padding:22rpx;border-radius:18rpx;background:#173f38;color:#fff;font-size:24rpx;font-weight:900;word-break:break-all;text-align:center;letter-spacing:1rpx}
 @media (max-width:360px){.order image{width:160rpx;height:160rpx}.contract-head b{font-size:30rpx}}
 .fulfillment-flow text{display:flex;align-items:center;gap:8rpx}
 .fulfillment-flow text b{display:inline-flex;align-items:center;justify-content:center;width:34rpx;height:34rpx;border-radius:999rpx;background:rgba(255,255,255,.22);font-size:20rpx}

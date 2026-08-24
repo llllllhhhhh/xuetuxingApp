@@ -2,8 +2,14 @@
   "name": "xuetuxing-uniapp",
   "version": "1.0.0",
   "private": true,
-  "description": "学徒行积分邀友与定制旅游融合小程序",
+  "description": "学徒行积分、学习服务与定制旅行 uni-app 客户端",
+  "scripts": {
+    "check:sfc": "node scripts/check-sfc.mjs"
+  },
   "uni-app": {
     "vueVersion": "3"
+  },
+  "devDependencies": {
+    "@vue/compiler-sfc": "3.5.39"
   }
 }

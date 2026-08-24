@@ -63,7 +63,7 @@ const menus = [
   { name: '学习服务商城', icon: '📚', url: '/pages/study/index', public: true },
   { name: '我的学习中心', icon: '🎓', url: '/pages/study/center' },
   { name: '我的积分', icon: '📄', url: '/pages/mine/points' },
-  { name: '录取通知书认证', icon: '🏅', url: '/pages/mine/graduation' },
+  { name: '学生证认证', icon: '🏅', url: '/pages/mine/graduation' },
   { name: '我的旅行', icon: '🧳', url: '/pages/mine/travel' },
   { name: '上岸权益', icon: '🏆', url: '/pages/mine/travel' },
   { name: '我的订单', icon: '▦', url: '/pages/mine/travel' },
@@ -127,6 +127,14 @@ onShow(async () => {
 <style scoped>
 .profile{background:linear-gradient(160deg,#fff8ef,#eaf7f3);padding:30rpx}
 .mine-actions{justify-content:flex-end}
+.content{padding:24rpx 22rpx 160rpx;background:linear-gradient(180deg,#edf5f2 0,#f7faf8 42%);border-top:1rpx solid rgba(18,63,57,.08)}
+.content :deep(.decorate-blocks){margin-bottom:22rpx}
+.content :deep(.decor-activity),
+.content :deep(.decor-smart),
+.content :deep(.decor-card),
+.content :deep(.decor-notice),
+.content :deep(.decor-route-card){border:2rpx solid rgba(21,63,56,.12)!important;box-shadow:0 16rpx 42rpx rgba(17,54,48,.1)!important}
+.content :deep(.decor-grid-item){border:1rpx solid rgba(21,63,56,.08);box-shadow:inset 0 1rpx 0 rgba(255,255,255,.7)}
 .user{display:flex;align-items:center;margin:25rpx 0 38rpx;border-radius:30rpx;transition:.18s}
 .user.tappable{cursor:pointer}
 .user.tappable:active{transform:scale(.985);background:rgba(255,255,255,.42)}
@@ -134,16 +142,17 @@ onShow(async () => {
 .user-info{flex:1;min-width:0}
 .user-name{font-size:36rpx;font-weight:900;display:flex;align-items:center;gap:12rpx;flex-wrap:wrap}
 .user-name text{font-size:20rpx;color:#12a594;background:#dff6f1;padding:6rpx 12rpx;border-radius:99rpx}
-.asset{display:flex;background:#fff;border-radius:25rpx;padding:25rpx}
-.asset view{flex:1;text-align:center;border-right:1rpx solid #e7ebe7}
+.asset{display:flex;background:#fff;border:2rpx solid rgba(21,63,56,.1);border-radius:25rpx;padding:25rpx;box-shadow:0 16rpx 38rpx rgba(17,54,48,.08)}
+.asset view{flex:1;text-align:center;border-right:1rpx solid #dfe8e5}
 .asset view:last-child{border:0}
 .asset b,.asset text{display:block}
 .asset b{font-size:30rpx}
 .asset text{font-size:21rpx;color:#778684}
-.benefit{background:#163f39;color:#fff;padding:30rpx;border-radius:28rpx;display:flex;align-items:center;justify-content:space-between}
+.benefit{background:#163f39;color:#fff;padding:30rpx;border-radius:28rpx;display:flex;align-items:center;justify-content:space-between;border:2rpx solid rgba(255,255,255,.16);box-shadow:0 18rpx 44rpx rgba(11,49,43,.18);margin-bottom:22rpx}
 .benefit-title{font-size:30rpx;font-weight:800;margin:8rpx 0}
 .benefit>text{font-size:50rpx}
-.menu-item{display:flex;align-items:center;padding:24rpx 0;border-bottom:1rpx solid #e7ebe7}
+.menu.card{background:#fff;border:2rpx solid rgba(21,63,56,.1);border-radius:28rpx;padding:0 26rpx;box-shadow:0 16rpx 42rpx rgba(17,54,48,.09)}
+.menu-item{display:flex;align-items:center;padding:24rpx 0;border-bottom:1rpx solid #dfe8e5}
 .menu-icon{width:65rpx;font-size:35rpx}
 .menu-item>text:nth-child(2){flex:1}
 .arrow{color:#a5afad;font-size:40rpx}

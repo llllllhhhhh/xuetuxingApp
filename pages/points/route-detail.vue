@@ -177,6 +177,7 @@ const reviewTipText = computed(() => {
   if (reviews.loading) return '评价加载中...'
   if (reviews.eligibility?.reason === 'already_reviewed') return '你已评价过当前兑换订单。'
   if (reviews.eligibility?.reason === 'not_exchanged') return '兑换这条路线后即可发布评价。'
+  if (reviews.eligibility?.reason === 'trip_not_completed') return '行程完成后即可发布评价。'
   return '登录并兑换后即可发布评价。'
 })
 const starText = rating => '★★★★★'.slice(0, Math.max(1, Math.min(5, Number(rating || 0))))

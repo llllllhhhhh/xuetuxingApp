@@ -1,39 +1,244 @@
 {
   "pages": [
-    { "path": "pages/index/index", "style": { "navigationStyle": "custom", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" } },
-    { "path": "pages/travel/index", "style": { "navigationStyle": "custom", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" } },
-    { "path": "pages/points/activity", "style": { "navigationBarTitleText": "邀请有礼" } },
-    { "path": "pages/points/poster", "style": { "navigationBarTitleText": "专属邀请海报" } },
-    { "path": "pages/points/exchange", "style": { "navigationBarTitleText": "积分兑换" } },
-    { "path": "pages/points/route-detail", "style": { "navigationBarTitleText": "旅游详情", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" } },
-    { "path": "pages/taishan/detail", "style": { "navigationBarTitleText": "泰山经典游" } },
-    { "path": "pages/taishan/success", "style": { "navigationBarTitleText": "预约结果" } },
-    { "path": "pages/custom/detail", "style": { "navigationBarTitleText": "路线详情" } },
-    { "path": "pages/custom/params", "style": { "navigationBarTitleText": "智能定制" } },
-    { "path": "pages/custom/match-result", "style": { "navigationBarTitleText": "匹配结果", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" } },
-    { "path": "pages/custom/manual", "style": { "navigationBarTitleText": "人工定制" } },
-    { "path": "pages/custom/preview", "style": { "navigationBarTitleText": "定制方案" } },
-    { "path": "pages/mine/index", "style": { "navigationStyle": "custom" } },
-    { "path": "pages/mine/profile", "style": { "navigationBarTitleText": "个人资料" } },
-    { "path": "pages/mine/points", "style": { "navigationBarTitleText": "我的积分" } },
-    { "path": "pages/mine/travel", "style": { "navigationBarTitleText": "我的旅行" } },
-    { "path": "pages/mine/graduation", "style": { "navigationBarTitleText": "录取通知书认证" } },
-    { "path": "pages/notice/index", "style": { "navigationBarTitleText": "平台公告" } },
-    { "path": "pages/notice/detail", "style": { "navigationBarTitleText": "公告详情" } },
-    { "path": "pages/article/index", "style": { "navigationBarTitleText": "文章中心", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" } },
-    { "path": "pages/article/detail", "style": { "navigationBarTitleText": "文章详情" } },
-    { "path": "pages/schools/index", "style": { "navigationStyle": "custom", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" } },
-    { "path": "pages/support/chat", "style": { "navigationBarTitleText": "在线客服", "navigationBarBackgroundColor": "#163f39", "navigationBarTextStyle": "white" } },
-    { "path": "pages/auth/login", "style": { "navigationBarTitleText": "登录 / 注册" } },
-    { "path": "pages/study/index", "style": { "navigationBarTitleText": "学习服务" } },
-    { "path": "pages/study/detail", "style": { "navigationBarTitleText": "服务详情" } },
-    { "path": "pages/study/center", "style": { "navigationBarTitleText": "学习中心" } },
-    { "path": "pages/payment/cashier", "style": { "navigationBarTitleText": "收银台" } },
-    { "path": "pages/admin/index", "style": { "navigationBarTitleText": "运营数据中心" } },
-    { "path": "pages/admin/rules", "style": { "navigationBarTitleText": "积分规则配置" } },
-    { "path": "pages/admin/anti", "style": { "navigationBarTitleText": "邀请关系与防刷" } },
-    { "path": "pages/admin/routes", "style": { "navigationBarTitleText": "旅行路线管理" } },
-    { "path": "pages/admin/orders", "style": { "navigationBarTitleText": "订单审核" } }
+    {
+      "path": "pages/onboarding/index",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#F4F7F5"
+      }
+    },
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
+      }
+    },
+    {
+      "path": "pages/travel/index",
+      "style": {
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
+      }
+    },
+    {
+      "path": "pages/zt/study-travel",
+      "style": {
+        "navigationBarTitleText": "上岸备考陪跑计划",
+        "navigationBarBackgroundColor": "#173f38",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/points/activity",
+      "style": {
+        "navigationBarTitleText": "邀请有礼"
+      }
+    },
+    {
+      "path": "pages/points/poster",
+      "style": {
+        "navigationBarTitleText": "专属邀请海报"
+      }
+    },
+    {
+      "path": "pages/points/exchange",
+      "style": {
+        "navigationBarTitleText": "积分兑换"
+      }
+    },
+    {
+      "path": "pages/points/route-detail",
+      "style": {
+        "navigationBarTitleText": "旅游详情",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
+      }
+    },
+    {
+      "path": "pages/taishan/detail",
+      "style": {
+        "navigationBarTitleText": "泰山经典游"
+      }
+    },
+    {
+      "path": "pages/taishan/success",
+      "style": {
+        "navigationBarTitleText": "预约结果"
+      }
+    },
+    {
+      "path": "pages/custom/detail",
+      "style": {
+        "navigationBarTitleText": "路线详情"
+      }
+    },
+    {
+      "path": "pages/custom/params",
+      "style": {
+        "navigationBarTitleText": "智能定制"
+      }
+    },
+    {
+      "path": "pages/custom/match-result",
+      "style": {
+        "navigationBarTitleText": "匹配结果",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
+      }
+    },
+    {
+      "path": "pages/custom/manual",
+      "style": {
+        "navigationBarTitleText": "人工定制"
+      }
+    },
+    {
+      "path": "pages/custom/preview",
+      "style": {
+        "navigationBarTitleText": "定制方案"
+      }
+    },
+    {
+      "path": "pages/mine/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/mine/profile",
+      "style": {
+        "navigationBarTitleText": "个人资料"
+      }
+    },
+    {
+      "path": "pages/mine/points",
+      "style": {
+        "navigationBarTitleText": "我的积分"
+      }
+    },
+    {
+      "path": "pages/mine/travel",
+      "style": {
+        "navigationBarTitleText": "我的旅行"
+      }
+    },
+    {
+      "path": "pages/mine/graduation",
+      "style": {
+        "navigationBarTitleText": "学生证认证"
+      }
+    },
+    {
+      "path": "pages/notice/index",
+      "style": {
+        "navigationBarTitleText": "平台公告"
+      }
+    },
+    {
+      "path": "pages/notice/detail",
+      "style": {
+        "navigationBarTitleText": "公告详情"
+      }
+    },
+    {
+      "path": "pages/article/index",
+      "style": {
+        "navigationBarTitleText": "文章中心",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
+      }
+    },
+    {
+      "path": "pages/article/detail",
+      "style": {
+        "navigationBarTitleText": "文章详情"
+      }
+    },
+    {
+      "path": "pages/schools/index",
+      "style": {
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
+      }
+    },
+    {
+      "path": "pages/support/chat",
+      "style": {
+        "navigationBarTitleText": "在线客服",
+        "navigationBarBackgroundColor": "#163f39",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/auth/login",
+      "style": {
+        "navigationBarTitleText": "登录 / 注册"
+      }
+    },
+    {
+      "path": "pages/study/index",
+      "style": {
+        "navigationBarTitleText": "学习服务"
+      }
+    },
+    {
+      "path": "pages/study/detail",
+      "style": {
+        "navigationBarTitleText": "服务详情"
+      }
+    },
+    {
+      "path": "pages/study/center",
+      "style": {
+        "navigationBarTitleText": "学习中心"
+      }
+    },
+    {
+      "path": "pages/study/checkin",
+      "style": {
+        "navigationBarTitleText": "签到"
+      }
+    },
+    {
+      "path": "pages/payment/cashier",
+      "style": {
+        "navigationBarTitleText": "收银台"
+      }
+    },
+    {
+      "path": "pages/admin/index",
+      "style": {
+        "navigationBarTitleText": "运营数据中心"
+      }
+    },
+    {
+      "path": "pages/admin/rules",
+      "style": {
+        "navigationBarTitleText": "积分规则配置"
+      }
+    },
+    {
+      "path": "pages/admin/anti",
+      "style": {
+        "navigationBarTitleText": "邀请关系与防刷"
+      }
+    },
+    {
+      "path": "pages/admin/routes",
+      "style": {
+        "navigationBarTitleText": "旅行路线管理"
+      }
+    },
+    {
+      "path": "pages/admin/orders",
+      "style": {
+        "navigationBarTitleText": "订单审核"
+      }
+    }
   ],
   "globalStyle": {
     "navigationBarTextStyle": "black",

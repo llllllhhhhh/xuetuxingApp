@@ -54,8 +54,7 @@
         <view class="decor-progress"><view :style="{ width: progressWidth(block) }" /></view>
       </view>
 
-      <view v-else-if="block.type === 'smart'" class="decor-smart" :class="{ 'has-bg-image': !!block.image }" :style="smartStyle(block)" @click="go(block.link || '/pages/custom/params')">
-        <view v-if="smartIcon(block)" class="decor-smart-icon" :style="{ color: block.iconColor || block.textColor || '' }">{{ smartIcon(block) }}</view>
+      <view v-else-if="block.type === 'smart'" class="decor-smart" :style="smartStyle(block)" @click="go(block.link || '/pages/custom/params')">
         <view class="decor-smart-main">
           <text :style="{ color: block.labelColor || block.textColor || '' }">{{ block.label || 'AI 智能匹配' }}</text>
           <view :style="{ color: block.titleColor || '' }">{{ block.title }}</view>
@@ -335,7 +334,6 @@ onUnmounted(() => {
   document.removeEventListener('fullscreenchange', handleNativeFullscreenChange)
   document.removeEventListener('webkitfullscreenchange', handleNativeFullscreenChange)
 })
-const smartIcon = block => block && Object.prototype.hasOwnProperty.call(block, 'icon') ? String(block.icon || '').trim() : '✦'
 const shadowMap = {
   none: 'none',
   soft: '0 10rpx 28rpx rgba(17,47,42,.055)',
@@ -343,24 +341,20 @@ const shadowMap = {
 }
 const cardStyle = (block, fallback = '#fff') => ({
   background: block?.background || fallback,
-  borderRadius: `${Number(block?.radius || 28)}rpx`,
+  borderRadius: '28rpx',
   padding: `${Number(block?.padding || 28)}rpx`,
   boxShadow: shadowMap[block?.shadow] || undefined,
 })
-const smartStyle = block => {
-  const style = cardStyle(block, '#dff5ef')
-  if (block?.image) {
-    style.backgroundImage = `url('${block.image}')`
-    style.backgroundSize = 'cover'
-    style.backgroundPosition = 'center'
-  }
-  return style
-}
+const smartStyle = block => ({
+  ...cardStyle(block, '#eef8f5'),
+  border: '1rpx solid #d7e9e4',
+  boxShadow: '0 12rpx 32rpx rgba(23,63,56,.07)',
+})
 const buttonStyle = block => ({
   background: block?.buttonColor || '#ff7a35',
 })
 const bannerStyle = block => ({
-  borderRadius: `${Number(block?.radius || 30)}rpx`,
+  borderRadius: '30rpx',
   height: `${Number(block?.height || 330)}rpx`,
   boxShadow: shadowMap[block?.shadow] || undefined,
 })
@@ -379,7 +373,7 @@ const hotZoneStyle = zone => ({
 })
 const videoStyle = block => ({
   height: `${Number(block?.video_height || 330)}rpx`,
-  borderRadius: `${Number(block?.radius || 24)}rpx`,
+  borderRadius: '24rpx',
 })
 const gridItems = block => {
   const list = Array.isArray(block?.gridItems) ? block.gridItems : block?.items || []
@@ -435,4 +429,9 @@ const openGrid = (item, index) => go(item?.link || gridUrls[index] || '')
 .decor-video-player :deep(video){object-fit:contain!important}
 .decor-video-active :deep(.uni-video-cover-play-button){display:none!important}
 .decor-hotzone{position:absolute;z-index:5}
+.decor-smart{min-height:148rpx;gap:22rpx}
+.decor-smart-main{min-width:0}
+.decor-smart-main view{font-size:32rpx;line-height:1.35}
+.decor-smart-main text{font-size:22rpx;line-height:1.5}
+.decor-smart-main text:first-child{margin-bottom:5rpx;font-weight:700}
 </style>

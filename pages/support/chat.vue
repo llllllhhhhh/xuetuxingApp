@@ -119,6 +119,7 @@ import {
   getMyTravelOrders,
   getSupportMessages,
   getUploadSettings,
+  getUserToken,
   getWebSocketBaseUrl,
   isLoggedIn,
   resolveAssetThumbUrl,
@@ -330,7 +331,7 @@ const handleClose = () => {
 const connect = () => {
   if (!conversation.value || manualClose || connecting || connected.value) return
   connecting = true
-  const url = `${getWebSocketBaseUrl()}/support/ws/${conversation.value.id}?user_id=${encodeURIComponent(user.value.user_no)}`
+  const url = `${getWebSocketBaseUrl()}/support/ws/${conversation.value.id}?role=user&token=${encodeURIComponent(getUserToken())}`
   socketTask = uni.connectSocket({ url, timeout: 10000, fail: handleClose })
   if (!socketTask) {
     handleClose()

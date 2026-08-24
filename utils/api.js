@@ -1,17 +1,29 @@
 import { COMMERCE_PAYMENT_STATUS, paymentStatusName } from './orderStatus.js'
+import { getPendingOnboardingSync, markOnboardingSynced } from './onboarding.js'
 
 const API_ENV_KEY = 'apiEnvironment'
 const API_OVERRIDE_KEY = 'apiBaseUrl'
 const API_URLS = {
   local: 'http://127.0.0.1:8000/api/v1',
-  lan: 'http://192.168.0.212:8000/api/v1',
-  production: 'http://113.44.149.128/api/v1',
+  lan: 'http://192.168.76.206:8000/api/v1',
+  production: 'https://goxuetuxing.com/api/v1',
 }
 const WS_URLS = {
-  production: 'ws://113.44.149.128/api/v1',
+  production: 'wss://goxuetuxing.com/api/v1',
 }
 const TOKEN_KEY = 'userToken'
 const USER_KEY = 'userProfile'
+
+const getWechatEnvVersion = () => {
+  // #ifdef MP-WEIXIN
+  try {
+    return uni.getAccountInfoSync?.().miniProgram?.envVersion || 'release'
+  } catch (_) {
+    return 'release'
+  }
+  // #endif
+  return 'release'
+}
 
 const detectApiBaseUrl = () => {
   // H5：本机调试走同源代理，避免图片资源被浏览器 CORS 拦截；局域网页面走同一台局域网主机；线上页面走同域 Nginx。
@@ -31,7 +43,7 @@ const detectApiBaseUrl = () => {
   return API_URLS.production
   // #endif
 
-  // 微信小程序无论开发或发行构建都固定使用线上服务器。
+  // 微信小程序正式版固定使用线上服务器；开发版由 getApiBaseUrl 处理本地覆盖。
   // #ifdef MP-WEIXIN
   return API_URLS.production
   // #endif
@@ -56,8 +68,11 @@ export const setCustomApiBaseUrl = url => {
   return getApiBaseUrl()
 }
 export const getApiBaseUrl = () => {
-  // 微信小程序固定使用线上 API，不受本地缓存的环境设置影响。
+  // 微信小程序正式版不接受缓存覆盖；开发版允许连接同一局域网内的本地后端。
   // #ifdef MP-WEIXIN
+  if (getWechatEnvVersion() !== 'release') {
+    return uni.getStorageSync(API_OVERRIDE_KEY) || API_URLS.lan
+  }
   return API_URLS.production
   // #endif
 
@@ -97,7 +112,10 @@ export const testApiConnection = () => new Promise(resolve => {
 })
 export const getWebSocketBaseUrl = () => {
   // #ifdef MP-WEIXIN
-  return WS_URLS.production
+  const miniApiBaseUrl = getApiBaseUrl()
+  return miniApiBaseUrl === API_URLS.production
+    ? WS_URLS.production
+    : miniApiBaseUrl.replace(/^http/, 'ws')
   // #endif
   // #ifdef APP-PLUS
   return WS_URLS.production
@@ -110,7 +128,6 @@ export const getWebSocketBaseUrl = () => {
     }
     // #endif
   }
-  if (apiBaseUrl.includes('113.44.149.128')) return apiBaseUrl.replace(/^http/, 'ws')
   return apiBaseUrl.replace(/^http/, 'ws')
 }
 export const getAssetBaseUrl = () => getApiBaseUrl().replace(/\/api\/v1$/, '')
@@ -269,7 +286,6 @@ export const submitGraduationCertification = (form, filePath) => new Promise((re
       real_name: form.realName,
       school_name: form.schoolName,
       major_name: form.majorName,
-      graduation_date: form.graduationDate,
       certificate_no: form.certificateNo,
     },
     header: getUserToken() ? { Authorization: `Bearer ${getUserToken()}` } : {},
@@ -284,7 +300,7 @@ export const submitGraduationCertification = (form, filePath) => new Promise((re
       if (result.statusCode >= 200 && result.statusCode < 300) resolve(data)
       else reject(new Error(formatApiError(data, result.statusCode)))
     },
-    fail: error => reject(new Error(error.errMsg || '毕业证上传失败')),
+    fail: error => reject(new Error(error.errMsg || '学生证上传失败')),
   })
 })
 
@@ -300,7 +316,23 @@ export const getInviteDeviceId = () => {
 export async function loginUser(payload) {
   const result = await request('/auth/login', { method: 'POST', data: payload, skipAuth: true })
   saveUserSession(result)
+  await syncPendingOnboardingProfile().catch(() => false)
   return result
+}
+
+export async function loginWechatMini(payload) {
+  const result = await request('/auth/wechat-mini/login', { method: 'POST', data: payload, skipAuth: true })
+  saveUserSession(result)
+  await syncPendingOnboardingProfile().catch(() => false)
+  return result
+}
+
+export async function getSliderCaptcha() {
+  return request(`/auth/slider-captcha?_t=${Date.now()}`, { skipAuth: true })
+}
+
+export async function verifySliderCaptcha(payload) {
+  return request('/auth/slider-captcha/verify', { method: 'POST', data: payload, skipAuth: true })
 }
 
 export async function fetchMe() {
@@ -581,6 +613,17 @@ export const getMyStudyOrders = async () => {
 export const getLearningCenter = () => request('/commerce/me/learning-center')
 export const studyCheckIn = () => request('/commerce/me/check-in', { method: 'POST' })
 export const updateLearningProfile = data => request('/commerce/me/learning-profile', { method: 'PUT', data })
+export const completeLearningOnboarding = data => request('/commerce/me/onboarding', { method: 'PUT', data })
+export async function syncPendingOnboardingProfile() {
+  const pending = getPendingOnboardingSync()
+  if (!pending || !isLoggedIn()) return false
+  const result = await completeLearningOnboarding({
+    version: Number(pending.version),
+    answers: pending.answers || {},
+  })
+  markOnboardingSynced(result.version || pending.version)
+  return true
+}
 export const submitCustomTravelRequest = data => request('/custom-travel/requests', { method: 'POST', data })
 export const getMyCustomTravelRequests = () => request('/custom-travel/requests')
 export const getCustomTravelRequest = id => request(`/custom-travel/requests/${id}`)
@@ -589,7 +632,33 @@ export const getTravelContractTemplate = () => request('/travel/contract-templat
 export const signTravelContract = (orderId, data) => request(`/travel/orders/${orderId}/contract/sign`, { method: 'POST', data })
 export const submitTravelPickupInfo = (orderId, data) => request(`/travel/orders/${orderId}/pickup-info`, { method: 'PUT', data })
 export const confirmTravelPickup = orderId => request(`/travel/orders/${orderId}/pickup/confirm`, { method: 'PATCH' })
-export const exchangeTravelRoute = (routeId, data = {}) => request(`/travel/routes/${routeId}/exchange`, { method: 'POST', data })
+export const cancelTravelOrder = (orderId, reason) => request(`/travel/orders/${orderId}/cancel`, { method: 'PATCH', data: { reason } })
+
+const exchangeIdempotencyKey = routeId => {
+  const userId = getCurrentUser()?.id || 'anonymous'
+  const storageKey = `travelExchangeIdempotency:${userId}:${routeId}`
+  const cached = uni.getStorageSync(storageKey)
+  if (cached?.key && Date.now() - Number(cached.createdAt || 0) < 10 * 60 * 1000) {
+    return { storageKey, key: cached.key }
+  }
+  const random = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`
+  const key = `travel-${userId}-${routeId}-${random}`
+  uni.setStorageSync(storageKey, { key, createdAt: Date.now() })
+  return { storageKey, key }
+}
+
+export const exchangeTravelRoute = async (routeId, data = {}) => {
+  const pending = exchangeIdempotencyKey(routeId)
+  const result = await request(`/travel/routes/${routeId}/exchange`, {
+    method: 'POST',
+    data,
+    headers: { 'Idempotency-Key': pending.key },
+  })
+  uni.removeStorageSync(pending.storageKey)
+  return result
+}
 export const getTravelRouteReviews = routeId => request(`/public/routes/${routeId}/reviews?_t=${Date.now()}`, { skipAuth: true })
 export const getTravelRouteReviewEligibility = routeId => request(`/travel/routes/${routeId}/review-eligibility`)
 export const submitTravelRouteReview = (routeId, data) => request(`/travel/routes/${routeId}/reviews`, { method: 'POST', data })
