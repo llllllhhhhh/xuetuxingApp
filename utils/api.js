@@ -470,10 +470,12 @@ export function getPreferenceUser() {
 export async function trackPreference({ type, key, name, action, score }) {
   const user = getPreferenceUser()
   try {
+    // Logged-in users send their token so the server attributes the event to
+    // str(user.id) (consistent with onboarding events). Anonymous guests keep
+    // the guest id and are rate-limited server-side.
     return await request('/public/preferences/events', {
       method: 'POST',
       data: { user_id: user.id, user_name: user.name, preference_type: type, target_key: String(key), target_name: name, action, score },
-      skipAuth: true,
     })
   } catch {
     return null
