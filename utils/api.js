@@ -559,6 +559,7 @@ export const payStandardOrderByBalance = orderNo => request(`/commerce/standard-
 export const createWechatPayment = orderNo => request(`/commerce/standard-orders/${orderNo}/pay/wechat`, { method: 'POST' })
 export const getStandardOrder = orderNo => request(`/commerce/standard-orders/${orderNo}`)
 export const syncWechatPayment = orderNo => request(`/commerce/standard-orders/${orderNo}/pay/wechat/sync`, { method: 'POST' })
+export const requestStandardOrderRefund = (orderNo, reason = '用户在学习订单页申请退款') => request(`/commerce/standard-orders/${orderNo}/refund/request`, { method: 'POST', data: { reason } })
 export const createStudyOrder = payload => createStandardOrder({
   items: [{
     product_id: payload.product_id,
