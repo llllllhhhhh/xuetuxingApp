@@ -40,7 +40,7 @@
       <view class="notice-dot"></view>
       <view>
         <b>支付说明</b>
-        <text>当前项目先使用系统余额完成扣款，微信、支付宝、Apple Pay 已预留入口，后续接入正式支付后可直接复用本收银台。</text>
+        <text>{{ paymentNotice }}</text>
       </view>
     </view>
 
@@ -59,11 +59,15 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
-import { createStudyOrder, fetchMe, getStudyProduct, getWallet, isLoggedIn, payStudyOrderByBalance } from '../../utils/api.js'
+import { createStudyOrder, createWechatPayment, fetchMe, getStandardOrder, getStudyProduct, getWallet, isLoggedIn, payStudyOrderByBalance } from '../../utils/api.js'
 
 const product = ref(null)
 const walletBalance = ref(0)
-const selectedMethod = ref('balance')
+const isWechatMiniProgram = ref(false)
+// #ifdef MP-WEIXIN
+isWechatMiniProgram.value = true
+// #endif
+const selectedMethod = ref(isWechatMiniProgram.value ? 'wechat' : 'balance')
 const loading = ref(true)
 const paying = ref(false)
 const remainSeconds = ref(30 * 60)
@@ -81,15 +85,18 @@ const actionText = computed(() => {
   const method = paymentMethods.value.find(item => item.key === selectedMethod.value)
   return method?.disabled ? '暂未开通' : '立即支付'
 })
+const paymentNotice = computed(() => isWechatMiniProgram.value
+  ? '微信支付由微信官方收银台完成，支付结果以服务端回调为准。'
+  : 'H5 本地预览使用系统余额支付；微信支付请在微信小程序中测试。')
 
 const paymentMethods = computed(() => [
   {
     key: 'wechat',
     name: '微信支付',
     icon: '微',
-    badge: '待接入',
-    note: '后续接入微信支付后可直接启用',
-    disabled: true,
+    badge: isWechatMiniProgram.value ? '官方支付' : '仅小程序',
+    note: isWechatMiniProgram.value ? '使用微信官方收银台安全支付' : '请在微信小程序中使用',
+    disabled: !isWechatMiniProgram.value,
   },
   {
     key: 'alipay',
@@ -134,16 +141,38 @@ const selectMethod = method => {
 
 const createPaymentAttemptKey = productId => `study-${productId}-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`
 
+const requestWechatPayment = params => new Promise((resolve, reject) => {
+  uni.requestPayment({
+    timeStamp: params.timeStamp,
+    nonceStr: params.nonceStr,
+    package: params.package,
+    signType: params.signType,
+    paySign: params.paySign,
+    success: resolve,
+    fail: reject,
+  })
+})
+
+const waitForPaidOrder = async orderNo => {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const order = await getStandardOrder(orderNo)
+    if (order.payment_status === 'paid') return order
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
+  return null
+}
+
 const payNow = async () => {
   if (paying.value || loading.value) return
   if (!isLoggedIn()) return uni.navigateTo({ url: '/pages/auth/login' })
   if (!product.value?.id) return uni.showToast({ title: '商品信息加载失败', icon: 'none' })
   if (remainSeconds.value <= 0) return uni.showToast({ title: '支付已超时，请重新进入收银台', icon: 'none' })
-  if (selectedMethod.value !== 'balance') return uni.showToast({ title: '当前仅支持余额支付', icon: 'none' })
-  const wallet = await getWallet().catch(() => null)
-  if (wallet) walletBalance.value = Number(wallet.balance || 0)
-  if (Number(walletBalance.value || 0) < Number(payAmount.value || 0)) {
-    return uni.showToast({ title: '余额不足，请先联系平台充值', icon: 'none' })
+  if (selectedMethod.value === 'balance') {
+    const wallet = await getWallet().catch(() => null)
+    if (wallet) walletBalance.value = Number(wallet.balance || 0)
+    if (Number(walletBalance.value || 0) < Number(payAmount.value || 0)) {
+      return uni.showToast({ title: '余额不足，请先联系平台充值', icon: 'none' })
+    }
   }
   paying.value = true
   try {
@@ -152,9 +181,21 @@ const payNow = async () => {
       product_id: product.value.id,
       quantity: 1,
       installment_count: installmentCount.value,
+      payment_method: selectedMethod.value,
       idempotency_key: idempotencyKey.value,
     })
-    await payStudyOrderByBalance(order)
+    if (selectedMethod.value === 'wechat') {
+      const params = await createWechatPayment(order.order_no)
+      await requestWechatPayment(params)
+      const confirmed = await waitForPaidOrder(order.order_no)
+      if (!confirmed) {
+        uni.showToast({ title: '支付结果确认中，请稍后查看订单', icon: 'none' })
+        setTimeout(() => uni.redirectTo({ url: '/pages/study/center' }), 900)
+        return
+      }
+    } else {
+      await payStudyOrderByBalance(order)
+    }
     fetchMe().catch(() => {})
     uni.showToast({ title: '支付成功' })
     setTimeout(() => uni.redirectTo({ url: '/pages/study/center' }), 650)

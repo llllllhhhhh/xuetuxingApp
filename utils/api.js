@@ -551,18 +551,20 @@ export const createStandardOrder = payload => request('/commerce/standard-orders
   method: 'POST',
   data: {
     ...payload,
-    payment_method: 'balance',
+    payment_method: payload.payment_method || 'balance',
     idempotency_key: payload.idempotency_key || createIdempotencyKey('study'),
   },
 })
 export const payStandardOrderByBalance = orderNo => request(`/commerce/standard-orders/${orderNo}/pay/balance`, { method: 'POST' })
+export const createWechatPayment = orderNo => request(`/commerce/standard-orders/${orderNo}/pay/wechat`, { method: 'POST' })
+export const getStandardOrder = orderNo => request(`/commerce/standard-orders/${orderNo}`)
 export const createStudyOrder = payload => createStandardOrder({
   items: [{
     product_id: payload.product_id,
     quantity: payload.quantity || 1,
     installment_count: payload.installment_count || 1,
   }],
-  payment_method: 'balance',
+  payment_method: payload.payment_method || 'balance',
   idempotency_key: payload.idempotency_key || createIdempotencyKey(`study-${payload.product_id}`),
 })
 export const payStudyOrderByBalance = order => payStandardOrderByBalance(order.order_no)
