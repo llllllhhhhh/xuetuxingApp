@@ -18,13 +18,13 @@
           <text>当前阶段</text>
           <b>{{ data.profile?.current_stage || '基础阶段' }}</b>
         </view>
-        <view class="profile-stat clickable" @tap.stop="goCheckinCalendar" @click.stop="goCheckinCalendar">
+        <view class="profile-stat clickable" @tap.stop="goCheckinCalendar">
           <text>累计打卡</text>
           <b>{{ data.profile?.checkin_days || 0 }}<small> 天</small></b>
         </view>
       </view>
 
-      <view :class="['checkin-button', { done: checked }]" @tap="checkIn" @click="checkIn">
+      <view :class="['checkin-button', { done: checked }]" @tap="checkIn">
         <view class="check-icon">{{ checked ? '✓' : '今' }}</view>
         <view>
           <b>{{ checked ? '今天已完成打卡' : '完成今日学习打卡' }}</b>
@@ -75,11 +75,11 @@
         <view class="empty-icon">书</view>
         <b>还没有已购服务</b>
         <text>选择适合你的督学社群或长期套餐，让备考更有节奏。</text>
-        <view class="shop-button" @tap="goShop" @click="goShop">浏览学习服务 <text>→</text></view>
+        <view class="shop-button" @tap="goShop">浏览学习服务 <text>→</text></view>
       </view>
 
       <view class="order-card">
-        <view class="order-header" @tap="showOrders" @click="showOrders">
+        <view class="order-header" @tap="showOrders">
           <view class="order-icon">单</view>
           <view>
             <b>我的学习订单</b>
@@ -103,7 +103,6 @@
               v-if="order.payment_status === COMMERCE_PAYMENT_STATUS.PAID"
               class="merchant-chat"
               @tap.stop="contactMerchant(order)"
-              @click.stop="contactMerchant(order)"
             >
               联系商户
             </view>
