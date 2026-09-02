@@ -79,34 +79,13 @@
       </view>
 
       <view class="order-card">
-        <view class="order-header" @tap="showOrders">
+        <view class="order-header" @tap="goOrders">
           <view class="order-icon">单</view>
           <view>
             <b>我的学习订单</b>
             <text>查看购买记录、支付状态与商户客服</text>
           </view>
-          <text class="order-arrow">{{ ordersVisible ? '⌃' : '→' }}</text>
-        </view>
-        <view v-if="ordersVisible" class="orders">
-          <view v-if="!orders.length" class="no-orders">暂无学习订单</view>
-          <view v-for="order in orders" :key="order.id" class="order-row">
-            <view class="order-info">
-              <b>{{ orderTitle(order) }}</b>
-              <text>{{ order.order_no }}</text>
-              <small>{{ formatDate(order.created_at) }}</small>
-            </view>
-            <view class="order-amount">
-              <b>¥{{ orderAmount(order) }}</b>
-              <text :class="order.payment_status">{{ order.payment_status_text || paymentStatusName(order.payment_status) }}</text>
-            </view>
-            <view
-              v-if="order.payment_status === COMMERCE_PAYMENT_STATUS.PAID"
-              class="merchant-chat"
-              @tap.stop="contactMerchant(order)"
-            >
-              联系商户
-            </view>
-          </view>
+          <text class="order-arrow">→</text>
         </view>
       </view>
       <view class="safe-bottom-space"></view>
@@ -120,21 +99,16 @@
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import BottomNav from '../../components/BottomNav.vue'
-import { createStudyOrderSupportConversation, getLearningCenter, getMyStudyOrders, studyCheckIn } from '../../utils/api.js'
-import { COMMERCE_PAYMENT_STATUS, paymentStatusName } from '../../utils/orderStatus.js'
+import { getLearningCenter, studyCheckIn } from '../../utils/api.js'
 
 const data = ref({ profile: {}, entitlements: [] })
 const loading = ref(true)
 const checked = ref(false)
-const ordersVisible = ref(false)
-const orders = ref([])
 
 const typeName = value => ({ community: '督学社群', package: '长期套餐', material: '资料包' }[value] || '学习服务')
 const typeIcon = value => ({ community: '群', package: '课', material: '资' }[value] || '学')
 const lessonIcon = value => ({ lesson: '课', material: '资', test: '测', live: '播', service: '服' }[value] || '学')
 const formatDate = value => value ? new Date(value).toLocaleDateString('zh-CN') : '-'
-const orderTitle = order => order.product_name || (order.items || []).map(item => item.product_name).join('、') || '学习服务订单'
-const orderAmount = order => Number(order.amount ?? order.payable_amount ?? 0).toFixed(2)
 
 const load = async () => {
   try {
@@ -162,25 +136,7 @@ const checkIn = async () => {
 
 const goCheckinCalendar = () => uni.navigateTo({ url: '/pages/study/checkin' })
 const goShop = () => uni.navigateTo({ url: '/pages/study/index' })
-const showOrders = async () => {
-  ordersVisible.value = !ordersVisible.value
-  if (ordersVisible.value && !orders.value.length) {
-    try {
-      orders.value = await getMyStudyOrders()
-    } catch (error) {
-      uni.showToast({ title: error.message || '订单加载失败', icon: 'none' })
-    }
-  }
-}
-
-const contactMerchant = async order => {
-  try {
-    const session = await createStudyOrderSupportConversation(order)
-    uni.navigateTo({ url: `/pages/support/chat?conversation_id=${encodeURIComponent(session.id)}` })
-  } catch (error) {
-    uni.showToast({ title: error.message || '商户客服连接失败', icon: 'none' })
-  }
-}
+const goOrders = () => uni.navigateTo({ url: '/pages/study/orders' })
 
 onLoad(load)
 </script>

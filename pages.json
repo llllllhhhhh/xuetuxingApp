@@ -198,6 +198,14 @@
       }
     },
     {
+      "path": "pages/study/orders",
+      "style": {
+        "navigationBarTitleText": "我的学习订单",
+        "enablePullDownRefresh": true,
+        "backgroundTextStyle": "dark"
+      }
+    },
+    {
       "path": "pages/study/checkin",
       "style": {
         "navigationBarTitleText": "签到"
