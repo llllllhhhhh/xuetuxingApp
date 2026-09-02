@@ -558,6 +558,7 @@ export const createStandardOrder = payload => request('/commerce/standard-orders
 export const payStandardOrderByBalance = orderNo => request(`/commerce/standard-orders/${orderNo}/pay/balance`, { method: 'POST' })
 export const createWechatPayment = orderNo => request(`/commerce/standard-orders/${orderNo}/pay/wechat`, { method: 'POST' })
 export const getStandardOrder = orderNo => request(`/commerce/standard-orders/${orderNo}`)
+export const syncWechatPayment = orderNo => request(`/commerce/standard-orders/${orderNo}/pay/wechat/sync`, { method: 'POST' })
 export const createStudyOrder = payload => createStandardOrder({
   items: [{
     product_id: payload.product_id,

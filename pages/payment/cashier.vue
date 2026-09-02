@@ -59,7 +59,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
-import { createStudyOrder, createWechatPayment, fetchMe, getStandardOrder, getStudyProduct, getWallet, isLoggedIn, payStudyOrderByBalance } from '../../utils/api.js'
+import { createStudyOrder, createWechatPayment, fetchMe, getStudyProduct, getWallet, isLoggedIn, payStudyOrderByBalance, syncWechatPayment } from '../../utils/api.js'
 
 const product = ref(null)
 const walletBalance = ref(0)
@@ -154,9 +154,12 @@ const requestWechatPayment = params => new Promise((resolve, reject) => {
 })
 
 const waitForPaidOrder = async orderNo => {
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    const order = await getStandardOrder(orderNo)
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const order = await syncWechatPayment(orderNo)
     if (order.payment_status === 'paid') return order
+    if (order.payment_status === 'canceled' || order.status === 'canceled') {
+      throw new Error('微信订单已关闭，请重新下单')
+    }
     await new Promise(resolve => setTimeout(resolve, 1000))
   }
   return null
@@ -200,7 +203,9 @@ const payNow = async () => {
     uni.showToast({ title: '支付成功' })
     setTimeout(() => uni.redirectTo({ url: '/pages/study/center' }), 650)
   } catch (error) {
-    uni.showToast({ title: error.message || '支付失败', icon: 'none' })
+    const message = String(error?.errMsg || error?.message || '')
+    const canceled = /cancel/i.test(message)
+    uni.showToast({ title: canceled ? '已取消支付，可稍后继续' : (error?.message || '支付失败'), icon: 'none' })
   } finally {
     paying.value = false
   }
