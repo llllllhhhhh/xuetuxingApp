@@ -215,10 +215,10 @@
 <script setup>
 import { ref } from 'vue'
 
-const heroImage = '/static/zt/study-travel-hero-v2.jpg'
-const studyFocusImage = '/static/zt/study-focus-v3.jpg'
-const studyServiceImage = '/static/zt/study-service-learning-v2.jpg'
-const rewardImage = '/static/zt/study-travel-reward-v2.jpg'
+const heroImage = '/pages/zt/static/study-travel-hero-v2.jpg'
+const studyFocusImage = '/pages/zt/static/study-focus-v3.jpg'
+const studyServiceImage = '/pages/zt/static/study-service-learning-v2.jpg'
+const rewardImage = '/pages/zt/static/study-travel-reward-v2.jpg'
 const form = ref({ name: '', target: '' })
 const stage = ref('')
 const stages = ['刚开始了解', '基础学习中', '强化刷题中', '冲刺复试中']
@@ -707,7 +707,7 @@ const submitLead = () => {
   background-color: #2c3858;
   background-image:
     linear-gradient(180deg, rgba(35, 47, 76, .62) 0%, rgba(25, 32, 53, .87) 100%),
-    url('/static/zt/growth-sunrise-v2.jpg');
+    url('./static/growth-sunrise-v2.jpg');
   background-position: 38% center;
   background-size: cover;
   box-shadow:

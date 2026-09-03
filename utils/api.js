@@ -14,17 +14,6 @@ const WS_URLS = {
 const TOKEN_KEY = 'userToken'
 const USER_KEY = 'userProfile'
 
-const getWechatEnvVersion = () => {
-  // #ifdef MP-WEIXIN
-  try {
-    return uni.getAccountInfoSync?.().miniProgram?.envVersion || 'release'
-  } catch (_) {
-    return 'release'
-  }
-  // #endif
-  return 'release'
-}
-
 const detectApiBaseUrl = () => {
   // H5：本机调试走同源代理，避免图片资源被浏览器 CORS 拦截；局域网页面走同一台局域网主机；线上页面走同域 Nginx。
   // #ifdef H5
@@ -68,11 +57,9 @@ export const setCustomApiBaseUrl = url => {
   return getApiBaseUrl()
 }
 export const getApiBaseUrl = () => {
-  // 微信小程序正式版不接受缓存覆盖；开发版允许连接同一局域网内的本地后端。
+  // 微信小程序的开发版、体验版和正式版统一使用线上 HTTPS API，
+  // 避免真机预览误连编译电脑的局域网地址。
   // #ifdef MP-WEIXIN
-  if (getWechatEnvVersion() !== 'release') {
-    return uni.getStorageSync(API_OVERRIDE_KEY) || API_URLS.lan
-  }
   return API_URLS.production
   // #endif
 

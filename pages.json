@@ -24,14 +24,6 @@
       }
     },
     {
-      "path": "pages/zt/study-travel",
-      "style": {
-        "navigationBarTitleText": "上岸备考陪跑计划",
-        "navigationBarBackgroundColor": "#173f38",
-        "navigationBarTextStyle": "white"
-      }
-    },
-    {
       "path": "pages/points/activity",
       "style": {
         "navigationBarTitleText": "邀请有礼"
@@ -246,6 +238,21 @@
       "style": {
         "navigationBarTitleText": "订单审核"
       }
+    }
+  ],
+  "subPackages": [
+    {
+      "root": "pages/zt",
+      "pages": [
+        {
+          "path": "study-travel",
+          "style": {
+            "navigationBarTitleText": "上岸备考陪跑计划",
+            "navigationBarBackgroundColor": "#173f38",
+            "navigationBarTextStyle": "white"
+          }
+        }
+      ]
     }
   ],
   "globalStyle": {
